@@ -1,6 +1,6 @@
 # Set up StudySync on a Mac
 
-Use the **codex/studysync-frontend** branch of [Ellievca/COP4331-MERN-Group29](https://github.com/Ellievca/COP4331-MERN-Group29). The branch contains both the React frontend and the new Express/MongoDB API. The name reflects where the work started; it now contains the full local application.
+Use the **studysync-frontend** branch of [Ellievca/COP4331-MERN-Group29](https://github.com/Ellievca/COP4331-MERN-Group29). The branch contains both the React frontend and the new Express/MongoDB API.
 
 ## Copy and paste this into Codex on the Mac
 
@@ -8,7 +8,7 @@ Use the **codex/studysync-frontend** branch of [Ellievca/COP4331-MERN-Group29](h
 Set up and run my COP4331 StudySync project on this Mac.
 
 Repository: https://github.com/Ellievca/COP4331-MERN-Group29.git
-Branch: codex/studysync-frontend
+Branch: studysync-frontend
 Preferred folder: ~/Developer/StudySync
 
 I authorize you to create/use that project folder, clone/fetch the repository,
@@ -57,7 +57,7 @@ GitHub cloning is public and does not require copying the Windows SSH key. macOS
 
 ```sh
 mkdir -p ~/Developer
-git clone --branch codex/studysync-frontend https://github.com/Ellievca/COP4331-MERN-Group29.git ~/Developer/StudySync
+git clone --branch studysync-frontend https://github.com/Ellievca/COP4331-MERN-Group29.git ~/Developer/StudySync
 cd ~/Developer/StudySync
 pnpm install --frozen-lockfile
 pnpm test
