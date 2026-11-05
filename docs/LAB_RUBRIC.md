@@ -1,34 +1,27 @@
 # Frontend lab rubric audit
 
-Source: the user's screenshot titled “MERN Project Lab - Front End.” Audited November 5, 2026. This is a readiness checklist, not a prediction of awarded points. The lab expressly requires the moving pieces to be fully integrated.
+Source: the user's screenshot “MERN Project Lab - Front End.” Updated November 5, 2026. This records readiness, not awarded points. The lab requires full integration.
 
-| Requirement from the screenshot                                                                   | Weight | Current evidence                                                                                                                                                                                                                                                                                             | Final demonstration status                                                                      |
-| ------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Application accessible through a domain name, not an IP address                                   | 10%    | No group domain has been supplied. The existing Nginx server name is still the starter `hellonode`.                                                                                                                                                                                                          | Pending the group's domain and deployment. Localhost does not meet this requirement.            |
-| Application secured through HTTPS                                                                 | 10%    | The droplet listens on HTTP port 80; no HTTPS listener was present during the audit.                                                                                                                                                                                                                         | Pending a valid TLS certificate and an HTTPS production URL.                                    |
-| Initial access renders the login page                                                             | 10%    | A signed-out visit to `/` routes to `/login`. Protected app routes also require sign-in.                                                                                                                                                                                                                     | Verified locally; repeat on the production domain.                                              |
-| Login page offers new-account registration                                                        | 10%    | “Create an account” links from `/login` to `/register`.                                                                                                                                                                                                                                                      | Verified locally; repeat on the production domain.                                              |
-| Registration submits the user's name, desired username/login, and password                        | 20%    | First and last name, username, and password are required and passed to the auth service. Email is also required by the available database schema. A successful submission returns to login.                                                                                                                  | Verified in browser-local demo mode. Real API/database registration still needs integration.    |
-| The newly registered user can log in with correct credentials and reach an interactive main page  | 20%    | A fresh account can sign in and create a deck, add/search flashcards, reveal answers, and complete a study session. Data survives a refresh in demo mode.                                                                                                                                                    | Verified locally; repeat using a real server-created account after API integration.             |
-| The newly registered user receives an error page with a generic failure for incorrect credentials | 20%    | A wrong password routes to `/login-error`, which displays “Login failed. Please check your credentials and try again.” It does not say whether the account or password was wrong. The API adapter also normalizes HTTP-200 error replies, negative/zero user IDs, and auth-denied HTTP replies to this flow. | Verified locally, with automated API-response regression coverage. Repeat against the real API. |
+| Requirement                                             | Weight | Implementation                                                                                        | Remaining final check                                                            |
+| ------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Domain name rather than numeric IP                      | 10%    | Production requires an HTTPS domain; deployment templates are prepared.                               | Group domain, DNS, and public deployment are pending.                            |
+| HTTPS                                                   | 10%    | Secure production cookies; TLS/redirect Nginx template.                                               | Install and verify a real certificate. Shared droplet settings have not changed. |
+| Initial access renders login                            | 10%    | Signed-out root visit opens /login.                                                                   | Repeat on the deployed domain.                                                   |
+| Login offers registration                               | 10%    | Create an account opens /register.                                                                    | Repeat on the deployed domain.                                                   |
+| Name, username, and password registration               | 20%    | Required fields plus email reach Express and MongoDB; password stored as bcrypt hash.                 | Repeat on the final merged API/database and domain.                              |
+| New user's correct login opens an interactive main page | 20%    | Server authentication opens a private workspace; course/deck/card/session changes persist in MongoDB. | Repeat after teammate reconciliation and deployment.                             |
+| Incorrect credentials show a generic error page         | 20%    | Generic server 401 routes to /login-error; alternate course-style failures are normalized too.        | Repeat against the final deployed API.                                           |
 
 ## Acceptance run
 
-Use a new account for this run rather than the “Try the demo” shortcut, because the rubric explicitly asks for login as the newly registered user.
+1. Run pnpm dev. Visit http://127.0.0.1:5173/ while signed out and confirm login.
+2. Register a unique username, name, email, and matching passwords. Confirm return to login.
+3. Use that username with a wrong password. Confirm the separate generic error page.
+4. Return with the correct credentials and confirm the personalized main page.
+5. Create a course/deck, add a flashcard, search/study it, and complete a session. Confirm history/totals update.
+6. Refresh and sign in again to confirm MongoDB persistence. Sign out and verify /app requires login.
+7. After merging teammates' work, repeat on the real HTTPS domain. Verify DNS, certificate, production cookies, registration, and database persistence there.
 
-1. Sign out, open the site's root URL, and confirm the login form appears.
-2. Follow “Create an account.” Submit first name, last name, email, a unique username, and matching passwords. Confirm the registration-success message and return to login.
-3. Enter that new username with an incorrect password. Confirm a separate generic login-error page appears.
-4. Follow “Back to sign in” and submit the correct credentials. Confirm the personalized main application opens.
-5. Create a deck and add a question/answer flashcard. Search for it, reveal its answer in a study session, and complete the session. Confirm study history updates.
-6. Refresh a deck page to confirm routing and saved data behave correctly. Sign out and confirm direct access to `/app` returns to login.
-7. Repeat all steps on the group's HTTPS domain using API mode. Confirm the hostname is a domain rather than a numeric IP, the TLS certificate is valid, and registration/login use the team's server and database.
+The backend integration tests use a disposable real MongoDB process. They cover authentication, hashing, ownership isolation, validated CRUD, session persistence/revocation, CSRF/origin checks, idempotent history, admin permissions, rate limits, and HTTPS production configuration. Local checks cannot establish that public DNS or TLS works.
 
-## Remaining release gates
-
-- Receive the group's domain and configure its DNS, Nginx server name, and valid HTTPS certificate.
-- Receive and map the API team's actual registration/login/session and workspace endpoints in `frontend/src/services/index.js`.
-- Set `VITE_DATA_MODE=api`, rebuild, and deploy the frontend with same-origin HTTPS API proxying or the agreed secure API URL.
-- Run the acceptance procedure on the deployed application. A browser-local demo cannot establish that the full MERN stack is integrated and is not a substitute for this last check.
-
-The group previously discussed an admin role, but that is not one of the seven requirements in this particular frontend lab screenshot. Admin behavior remains a separate project requirement to coordinate with the API team.
+The earlier group discussion also required an admin side. Account management and statistics are now implemented separately from these seven frontend lab points. Coordinate additional admin expectations with Lukas.

@@ -1,5 +1,5 @@
 const environment = import.meta.env || {};
-export const IS_DEMO = environment.VITE_DATA_MODE !== 'api';
+export const IS_DEMO = environment.VITE_DATA_MODE === 'demo';
 const API_BASE_URL = (environment.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
 export const LOGIN_FAILURE_MESSAGE = 'Login failed. Please check your credentials and try again.';
 
@@ -13,7 +13,7 @@ export class ServiceError extends Error {
 
 export async function request(
   path,
-  { method = 'GET', body, token, signal, applicationErrorStatus = 0 } = {},
+  { method = 'GET', body, token, csrfToken, signal, applicationErrorStatus = 0 } = {},
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
@@ -24,6 +24,7 @@ export async function request(
         Accept: 'application/json',
         ...(body ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       },
       credentials: 'include',
       ...(body ? { body: JSON.stringify(body) } : {}),
@@ -83,7 +84,12 @@ export function normalizeLoginResponse(result) {
     throw new ServiceError(
       'The login response is missing user information. Check the API adapter.',
     );
-  return { user: normalizeUser(result.user), accessToken: result.accessToken, mode: 'api' };
+  return {
+    user: normalizeUser(result.user),
+    accessToken: result.accessToken,
+    csrfToken: result.csrfToken,
+    mode: 'api',
+  };
 }
 export const normalizeDeck = (deck) => ({
   ...deck,

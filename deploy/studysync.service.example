@@ -1,0 +1,20 @@
+[Unit]
+Description=StudySync MERN application
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=studysync
+Group=studysync
+WorkingDirectory=/var/www/studysync
+Environment=NODE_ENV=production
+EnvironmentFile=/var/www/studysync/server/.env
+ExecStart=/usr/bin/node /var/www/studysync/server/src/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+[Install]
+WantedBy=multi-user.target

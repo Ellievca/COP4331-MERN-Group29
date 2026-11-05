@@ -1,80 +1,68 @@
 # StudySync
 
-React frontend for the COP4331 Group 29 MERN project. The frontend lab flow is implemented with a browser-local demo adapter so it can be reviewed while the team's backend is being prepared.
+COP4331 Group 29 MERN application: React/JavaScript frontend, Express API, and MongoDB persistence. The frontend uses the bundled API by default. A separate browser-only demo remains available for design work.
 
-## Run locally
+## Run the full application locally
 
-Requires Node.js 20.19+ or 22.12+ and a package manager. From `frontend/`:
+Moving to a Mac? Use the [copy-and-paste Codex setup prompt](docs/MACOS_SETUP.md).
 
-```sh
-npm install
-npm run dev
-```
-
-The app opens at the local URL printed by Vite, normally `http://localhost:5173`. `pnpm install` and `pnpm dev` also work; the committed `pnpm-lock.yaml` records the verified dependency versions. Run `pnpm install --frozen-lockfile` to reproduce them exactly.
+Use Node.js 22.12+ and pnpm 11. From the repository root:
 
 ```sh
-npm test
-npm run build
-npm run preview
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-The production static files are generated in `frontend/dist/`. The deployed app is a client-side React application. It needs a static host with SPA fallback and a backend API for real accounts and persisted shared data.
+Open **http://127.0.0.1:5173**. Register a new account and sign in. Create a course from My decks, create a deck, add flashcards, and complete a study session. New server accounts start with an empty private workspace rather than fabricated activity.
 
-## What works in demo mode
+The launcher starts React/Vite on `127.0.0.1:5173`, Express on `127.0.0.1:5000`, and a real MongoDB 8.0.17 process on `127.0.0.1:27019`. Vite proxies `/api` to Express. MongoDB uses WiredTiger and the ignored `server/.local-mongo/` directory, so data survives restarts. The first launch downloads the official MongoDB binary through `mongodb-memory-server-core`; despite that package's name, this development database is persisted to disk.
 
-- Initial access opens the login page. Authenticated routes redirect signed-out visitors to login.
-- Registration collects first name, last name, email, username, password, and password confirmation. Email is included because the existing database schema requires it.
-- Successful registration returns to login with a confirmation. The new credentials open the main application.
-- Incorrect credentials navigate to a separate generic login-failure page, with a path back to sign in.
-- The dashboard shows the user's name, deck/card totals, actual completed study sessions, and progress toward a daily goal of 20 reviewed cards.
-- Users can create and delete decks, search/filter/sort them, add/delete/search flashcards, reveal answers, self-assess recall, complete sessions, and view study history.
-- Layouts adapt to phone and desktop sizes. Forms have labels and validation. Native dialogs support focus management and Escape; buttons support keyboard navigation.
+The local launcher uses **StudySync_local** and does not connect to or reset the group's droplet/Atlas database. Do not run the original Docker MongoDB container on port 27019 at the same time. To use another MongoDB, configure `server/.env` from its example and run `pnpm start`, then start the frontend separately.
 
-“Try the demo” signs into the example account (`student` / `StudySync123!`). Register a new account to test the actual registration → login flow. Starter flashcards are example content; activity starts empty. The workspace is based on the courses/decks/cards structure in `database-setup.js` on the repository's `ellie` branch. Group meetings and room booking are not implemented in this first frontend pass.
-
-Demo accounts and workspaces are stored in localStorage, separately for each user. The current session is kept in sessionStorage, survives refresh in the same tab, and clears on logout. Demo passwords are salted and derived with Web Crypto PBKDF2, never stored in plaintext. This is a test harness, not production authentication: use practice credentials. Clearing the site's browser storage removes all demo data. No real email, reset, or verification messages are sent.
-
-## Connect the team's API
-
-See [the API handoff](docs/API_HANDOFF.md). Every request is centralized in `frontend/src/services/`. Components use the same service interface in demo and API modes.
-
-Copy `frontend/.env.example` to `frontend/.env.local`, set `VITE_DATA_MODE=api`, configure the API base URL, and update the provisional endpoint/payload mappings in `src/services/index.js`. Restart Vite after changing these settings. The current REST contract is a frontend proposal; it has not been confirmed with or tested against the API team's server.
-
-Never put a MongoDB connection string, database password, signing secret, or private key into a frontend environment variable. Vite variables are public build inputs. Real password hashing, authorization, authentication, and database access belong to the backend.
-
-## Frontend lab demonstration
-
-See the [point-by-point rubric audit and acceptance run](docs/LAB_RUBRIC.md) for the exact seven requirements, current evidence, and remaining deployment gates.
-
-| Rubric item                                        | Current state                                                 |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| Domain name (10%)                                  | Pending deployment and the group's domain/DNS setup.          |
-| HTTPS (10%)                                        | Pending the droplet's TLS setup.                              |
-| Initial login page (10%)                           | Implemented at `/login`; `/` redirects there.                 |
-| Registration option (10%)                          | Implemented on the login page.                                |
-| Name, username, password registration (20%)        | Implemented, plus the schema-required email field.            |
-| Correct login opens an interactive main page (20%) | Works with demo accounts. Real server integration is pending. |
-| Incorrect login opens a generic error page (20%)   | Implemented at `/login-error`.                                |
-
-For a practice run: register with new credentials, sign in, create a deck, add a flashcard, study it, and check the session history. Sign out, enter the wrong password, and verify the generic error page. Repeat through the production domain after the API and HTTPS are connected. A demo-only build is not a substitute for the lab's fully integrated deployment.
-
-## Deployment notes
-
-The existing droplet and MongoDB were inspected but have not been changed by this frontend work. Confirm with the API team whether the app will use the droplet's `study_app` database or the `StudySync` schema on the `ellie` branch.
-
-For Nginx, use SPA fallback for the static frontend and proxy the API separately:
-
-```nginx
-location /api/ {
-    proxy_pass http://127.0.0.1:5000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-
-location / {
-    try_files $uri $uri/ /index.html;
-}
+```sh
+pnpm test          # frontend behavior tests + disposable real-MongoDB integration tests
+pnpm build         # production React bundle in frontend/dist/
+pnpm dev:demo      # optional browser-only prototype
 ```
 
-The port is an example; match the backend team's actual port. Configure the group's domain and a valid TLS certificate on the droplet before demoing. Prefer an API behind the same HTTPS domain: an HTTPS frontend cannot reliably call an HTTP API because browsers block mixed content. Do not replace the droplet's current configuration until the complete deployment has been reviewed.
+Stop the root launcher with Ctrl+C. Stop an existing preview before starting another copy on port 5173. Authentication uses an HttpOnly server-session cookie; database credentials stay on the server.
+
+## Implemented behavior
+
+- Registration, server-hashed passwords, new-user login, generic login-error page, session validation, and logout.
+- Owner-scoped courses, decks, and flashcards. The UI supports course/deck creation, adding/deleting flashcards, search, filters, and sorting. API PATCH routes also support course/deck/card updates.
+- Answer reveals, recall self-checks, saved study history, dashboard totals, and idempotent session saving.
+- Admin-only account search, workspace statistics, and account activation/deactivation. Disabling an account revokes its sessions. Public registration cannot assign an admin role.
+- Server-side validation/authorization, CSRF tokens, origin checks, rate limiting, unique identity indexes, expiring sessions, safe JSON errors, and production Secure/HttpOnly cookies.
+
+Email verification and password-reset delivery are not implemented: the supplied frontend lab does not require them. `isVerified` stays false after registration; the new account can sign in for the lab flow. Group meetings and room booking remain outside the current flashcard-oriented schema.
+
+## Administrator access
+
+Register an ordinary account first, then run from a trusted server terminal configured for the intended database:
+
+```sh
+pnpm create-admin --login your-existing-username
+```
+
+Locally this command defaults to MongoDB on port 27019; `server/.env` overrides that connection. Configure the intended database first in production. Sign in again or refresh afterward. Both the UI and API check the admin role.
+
+## Teammate integration
+
+See [the API contract and merge guide](docs/API_HANDOFF.md). Frontend mappings are isolated in `frontend/src/services/index.js`; the bundled backend lives under `server/`. Compare it with the teammates' implementation when received and retain the behavior that passes the acceptance checks.
+
+Collections follow Ellie's setup: `Users`, `Courses`, `Decks`, `Cards`, and `StudySessions`, plus `AuthSessions`. Startup creates missing collections/indexes and preserves existing validators/data. Confirm the authoritative database before deployment: earlier inspection found `study_app` on the droplet, while the setup script targets `StudySync`.
+
+## Lab readiness and deployment
+
+The [rubric audit](docs/LAB_RUBRIC.md) covers all seven requirements. The five application behaviors can now run through React, Express, and MongoDB locally. Final readiness still requires the group's HTTPS domain and repeating that workflow there.
+
+1. Confirm the domain, DNS access, authoritative database, and final merged API.
+2. Configure the production server's ignored `server/.env`: `NODE_ENV=production`, least-privileged `MONGODB_URI`, `MONGODB_DB_NAME`, `APP_ORIGIN=https://your-domain`, `HOST=127.0.0.1`, `PORT=5000`, and `TRUST_PROXY=1` behind one trusted Nginx proxy.
+3. Install dependencies and run `pnpm build`. `pnpm start` serves the built React app and API. Review the [systemd](deploy/studysync.service.example) and [Nginx](deploy/nginx.conf.example) templates for the actual user/paths.
+4. Install a valid certificate and HTTP-to-HTTPS redirect. Production rejects an HTTP or numeric-IP app origin and sets Secure cookies.
+5. Repeat registration, wrong-password rejection, successful login, studying, refresh, and logout through the deployed domain.
+
+Templates have not been installed on the shared droplet. The domain/certificate are still pending. GitHub Actions runs tests/builds only; it does not deploy.
+
+The server setup follows [Express security guidance](https://expressjs.com/en/advanced/best-practice-security/). The development/test launcher follows [mongodb-memory-server's lifecycle](https://typegoose.github.io/mongodb-memory-server/docs/guides/quick-start-guide/).

@@ -1,49 +1,66 @@
-# Frontend API handoff
+# Implemented API and teammate merge guide
 
-The React UI is ready to connect once the API team provides the real endpoint contract. The paths below are provisional placeholders, not a claim that these endpoints exist. The original class tutorial uses different paths and response shapes. Change the service adapter to match the team's actual API.
+The bundled Express server implements this contract against MongoDB. The frontend defaults to API mode and does not silently fall back to demo data. The teammates' backend has not yet been received or merged.
+
+## Authentication
+
+| Method and path         | Request / response                                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST /api/auth/register | `{ firstName, lastName, email, login, password }` returns `201 { user }`.                                                                                       |
+| POST /api/auth/login    | `{ login, password }` returns `{ user, csrfToken }` and an HttpOnly session cookie. Username or email is accepted. Incorrect credentials produce a generic 401. |
+| GET /api/auth/me        | Cookie returns `{ user, csrfToken }`; missing/expired/disabled sessions return 401.                                                                             |
+| POST /api/auth/logout   | Cookie plus `X-CSRF-Token` revokes the session and clears its cookie; returns 204.                                                                              |
+
+Public user fields are id, firstName, lastName, email, login, role, isVerified, and isActive. Password hashes/tokens are never returned. Registration always assigns `user`; passwords use bcrypt with 12 rounds, a minimum of eight characters, and a maximum of 72 UTF-8 bytes. Verification delivery is not implemented and isVerified remains false.
+
+The cookie contains a random opaque token; MongoDB stores its SHA-256 digest in AuthSessions. Expiry is checked on every authenticated request independently of TTL cleanup. Cookies use HttpOnly, SameSite=Lax, /api scope, and Secure in production. Sessions expire after eight hours by default, and login rotates an existing session.
+
+All authenticated POST/PATCH/PUT/DELETE calls require `X-CSRF-Token` from login or /me. The frontend stores that anti-CSRF value with the public user in sessionStorage; it cannot read the authentication cookie. Focus refreshes and login/logout notifications reconcile session changes across tabs. The frontend retains its bearer-token adapter option for merging with a teammate JWT API, but this server uses cookies.
+
+## Workspace routes
+
+All workspace operations require authentication and are owner-scoped. IDs are ObjectId strings; arrays are returned directly; resource responses use `id` and ISO dates.
+
+| Operation               | Method and path                               | Body / behavior                                                                                        |
+| ----------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| List/create courses     | GET/POST /api/courses                         | `{ name, code?, color? }`                                                                              |
+| Update/delete course    | PATCH/DELETE /api/courses/:id                 | Update name/code/color; deleting a course with active decks returns 409.                               |
+| List/create decks       | GET/POST /api/decks                           | `{ title, description?, courseId? }`; private by default.                                              |
+| Read/update/delete deck | GET/PATCH/DELETE /api/decks/:id               | Update title/description/courseId; deletion hides the deck, removes cards, and preserves history.      |
+| List/create cards       | GET/POST /api/decks/:deckId/cards             | `{ front, back }`                                                                                      |
+| Update/delete card      | PATCH/DELETE /api/decks/:deckId/cards/:cardId | Update front and/or back.                                                                              |
+| List/save sessions      | GET/POST /api/study-sessions                  | `{ deckId, courseId?, deckTitle?, clientSessionId?, startedAt, endedAt, cardsReviewed, cardsCorrect }` |
+| Health                  | GET /api/health                               | Anonymous `{ status: "ok", database: "connected" }` connectivity check.                                |
+
+The server assigns ownership, timestamps, visibility, and historical deck titles. Client-supplied owner IDs/roles are rejected. Cross-account IDs return 404. Card counts come from MongoDB. Decks support up to 1,000 cards; card lists return up to that maximum. Other lists accept `?limit=` (default 500, maximum 1,000). Deck lists also accept literal `?search=` and `?courseId=`.
+
+Session totals must agree with the deck, correct cards cannot exceed reviewed cards, and end time must follow start time. The UI sends a UUID clientSessionId; retries with the same identifier create one history record. Recall is self-reported, not independently verified performance.
+
+## Administration
+
+- GET /api/admin/stats returns users, activeUsers, decks, cards, sessions.
+- GET /api/admin/users returns safe user records (default 100, maximum 500 through ?limit=).
+- PATCH /api/admin/users/:id/activation accepts `{ isActive }`. Disabling a student revokes sessions. Administrator accounts are protected.
+
+The UI at /app/admin exposes these operations for admins. The API independently enforces the role. Use the trusted `pnpm create-admin --login existing-username` command to assign a role; no public promotion endpoint exists.
 
 ## Integration seam
 
-- `frontend/src/services/client.js`: base URL, fetch, headers, timeout, error handling, ID normalization.
-- `frontend/src/services/index.js`: all API routes and request/response adaptation.
-- `frontend/src/services/demo.js`: browser-only demo authentication and persistence.
-- `frontend/src/state/`: authenticated session and workspace state consumed by the UI.
+- frontend/src/services/client.js: requests, cookies, CSRF headers, timeout/errors, normalization.
+- frontend/src/services/index.js: endpoint paths and payload adapters.
+- frontend/.env.development and .env.production: API mode, same-origin requests.
+- frontend/vite.config.js: local /api proxy to port 5000.
+- frontend/.env.demo: explicitly selected browser-only demo.
 
-Set `VITE_DATA_MODE=api` and `VITE_API_BASE_URL=https://your-domain.example` in an ignored `frontend/.env.local`. Leave the base URL blank for same-origin `/api` requests, which is preferred when deployed behind Nginx. Restart/rebuild after changes. There is no automatic fallback to demo data if a real API fails.
+Never expose database credentials through VITE\_ variables. For a separate API origin configure VITE_API_BASE_URL and the exact backend allowed origin. Same-origin HTTPS is preferred. The login adapter also normalizes the course examples' HTTP-200 errors, auth-denied replies, and zero/negative IDs to the generic error page.
 
-## Proposed request and response shapes
+## Merge the teammates' code
 
-| Operation       | Method and path                       | Body / response                                                                                                                                                                                               |
-| --------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Register        | `POST /api/auth/register`             | Body: `{ firstName, lastName, email, login, password }`. Any successful JSON response is accepted; the UI returns to login.                                                                                   |
-| Login           | `POST /api/auth/login`                | Body: `{ login, password }`. Response: `{ user: { id, firstName, lastName, login, email }, accessToken? }`. Invalid credentials must use 401 or be mapped to a `ServiceError` with status 401 in the adapter. |
-| Restore session | `GET /api/auth/me`                    | Response: `{ user: { id, firstName, lastName, login, email } }`. This is verified with the server on refresh in API mode.                                                                                     |
-| Logout          | `POST /api/auth/logout`               | Revoke the cookie/session; return success. The browser clears its local session even if this request fails.                                                                                                   |
-| Courses         | `GET /api/courses`                    | Array of `{ id, name, code, color? }`. Colors may be `purple`, `blue`, or `peach`; otherwise the UI uses its default.                                                                                         |
-| Decks           | `GET /api/decks`                      | Array of `{ id, courseId, title, description, cardCount, isPublic, createdAt, updatedAt }`.                                                                                                                   |
-| Create deck     | `POST /api/decks`                     | Body: `{ title, description, courseId }`, with a nullable course ID. Return the created deck. The server should set the authenticated owner, `isPublic: false`, and timestamps.                               |
-| Delete deck     | `DELETE /api/decks/:id`               | Return 204 or successful JSON. Handle dependent cards on the server.                                                                                                                                          |
-| Deck cards      | `GET /api/decks/:id/cards`            | Array of `{ id, front, back }`.                                                                                                                                                                               |
-| Add card        | `POST /api/decks/:id/cards`           | Body: `{ front, back }`. Return the created card. The server sets owner/deck IDs and timestamps.                                                                                                              |
-| Delete card     | `DELETE /api/decks/:id/cards/:cardId` | Return 204 or successful JSON. Keep deck card counts consistent.                                                                                                                                              |
-| Sessions        | `GET /api/study-sessions`             | Array of `{ id, deckId, deckTitle?, courseId, startedAt, endedAt, cardsReviewed, cardsCorrect }`.                                                                                                             |
-| Save session    | `POST /api/study-sessions`            | Body: `{ deckId, deckTitle, courseId, startedAt, endedAt, cardsReviewed, cardsCorrect }`. Return the saved session.                                                                                           |
+1. Fetch and inspect their branches, routes, schema, session/JWT strategy, and tests. Keep a review branch rather than overwriting their API or the shared database.
+2. Agree on StudySync versus the previously observed study_app database. Preserve real data and reconcile validators deliberately.
+3. Compare the routes above with theirs. Reuse equivalent existing behavior and map naming/wrapper differences in the frontend service adapter.
+4. Choose one authentication strategy. Reconcile verification, expiry, logout, storage, and CSRF explicitly if adopting their JWT approach.
+5. Preserve password hashing, duplicate handling, generic failures, ownership, admin checks, and session invalidation tests.
+6. Repeat the fresh-account rubric flow on the merged app, then on the deployed HTTPS domain.
 
-IDs may be serialized as `id` or `_id`; the adapter normalizes those fields. Other field names should be adapted explicitly. If endpoints wrap arrays in `{ results: [...] }`, unwrap them in `services/index.js`. Do not expose password hashes or verification/reset tokens in user responses.
-
-## Authentication and errors
-
-The request helper supports secure server cookies using `credentials: include`, and attaches a bearer token if login returns `accessToken`. Settle on the API team's actual strategy. A cookie-based session must use an appropriate Secure, HttpOnly, SameSite cookie and server-side CSRF protection when needed. Cross-origin requests require the server to allow the exact frontend origin and credentials. Same-origin deployment avoids that CORS configuration.
-
-During this initial scaffold, bearer access tokens are held in sessionStorage if supplied; review token storage with the API team before production. All ownership/role checks must run on the server; the demo client is not an authorization boundary. Backend password hashing must use a suitable server-side password hashing library rather than the browser demo code.
-
-The client handles non-2xx HTTP responses, HTTP-200 `{ error: "..." }` responses, network failures, timeouts, and malformed JSON. The login adapter normalizes HTTP-200 errors, HTTP 401/403 authentication failures, `{ success: false }`, and zero/negative user IDs to a generic 401 failure so the dedicated error-page route is used. Map any additional invalid-login signals in your backend's contract to that same flow. Avoid displaying which part of the credentials was wrong.
-
-## Open questions for the API team
-
-1. What are the real route paths, payloads, and response bodies for registration/login/logout/session validation?
-2. Does registration require email verification before login? The lab flow expects a newly registered user to be able to sign in; coordinate the demonstration account flow accordingly.
-3. Which database is authoritative: `StudySync` from the setup script or `study_app` on the droplet?
-4. Are courses, decks, cards, and study-session endpoints available? If only auth is ready first, adapt workspace loading to the agreed minimum without silently pretending API data exists.
-5. Does the project need an admin role in the frontend? The earlier team discussion says it does, but the role schema and admin endpoints have not been supplied. This lab pass implements the student experience only.
-6. Is group/room planning still in scope, or is the flashcard-oriented database now the final product direction?
+Email verification/reset delivery and room/group scheduling are not implemented. Confirm those final-project requirements separately. Admin account management is implemented; reconcile broader admin scope with Lukas when his code arrives.

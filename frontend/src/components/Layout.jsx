@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Sparkles,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { Brand, Modal, Toast } from './UI.jsx';
@@ -66,8 +67,9 @@ export default function Layout() {
     return () => desktop.removeEventListener('change', closeOnDesktop);
   }, []);
   const location = useLocation();
-  const section =
-    location.pathname.includes('/decks') || location.pathname.includes('/study/')
+  const section = location.pathname.includes('/admin')
+    ? 'Administration'
+    : location.pathname.includes('/decks') || location.pathname.includes('/study/')
       ? 'My decks'
       : location.pathname.includes('/sessions')
         ? 'Study sessions'
@@ -76,8 +78,10 @@ export default function Layout() {
     setSigningOut(true);
     try {
       await logout();
-    } catch {
-      /* Local session is cleared even if the API logout request fails. */
+    } catch (failure) {
+      setToast(failure.message);
+    } finally {
+      setSigningOut(false);
     }
   }
   return (
@@ -126,6 +130,12 @@ export default function Layout() {
             <Clock3 size={19} />
             Study sessions
           </NavLink>
+          {user.role === 'admin' && (
+            <NavLink to="/app/admin" onClick={() => setMenuOpen(false)}>
+              <ShieldCheck size={19} />
+              Administration
+            </NavLink>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note">

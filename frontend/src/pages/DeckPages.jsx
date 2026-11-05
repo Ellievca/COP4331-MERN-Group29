@@ -225,6 +225,7 @@ export function StudyPage() {
   const [flipped, setFlipped] = useState(false);
   const [correct, setCorrect] = useState(0);
   const [startedAt, setStartedAt] = useState(() => new Date().toISOString());
+  const [clientSessionId, setClientSessionId] = useState(() => crypto.randomUUID());
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -268,6 +269,7 @@ export function StudyPage() {
     setBusy(true);
     setError('');
     const session = {
+      clientSessionId,
       deckId: id,
       courseId: deck.courseId || null,
       deckTitle: deck.title,
@@ -290,6 +292,7 @@ export function StudyPage() {
     setFlipped(false);
     setCorrect(0);
     setStartedAt(new Date().toISOString());
+    setClientSessionId(crypto.randomUUID());
     setDone(null);
     setError('');
   }

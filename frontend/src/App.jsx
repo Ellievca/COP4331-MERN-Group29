@@ -8,6 +8,7 @@ import { DashboardPage, LibraryPage, SessionsPage } from './pages/Dashboard.jsx'
 import { DeckDetailPage, StudyPage } from './pages/DeckPages.jsx';
 import { EmptyState, Spinner } from './components/UI.jsx';
 import Layout from './components/Layout.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 class ErrorBoundary extends Component {
   state = { failed: false };
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="decks/:id" element={<DeckDetailPage />} />
             <Route path="study/:id" element={<StudyRoute />} />
             <Route path="sessions" element={<SessionsPage />} />
+            <Route path="admin" element={<AdminPage />} />
             <Route
               path="*"
               element={

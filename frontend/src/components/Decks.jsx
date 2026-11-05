@@ -13,6 +13,86 @@ const courseIcon = (code) =>
       : code === 'CDA3103'
         ? CircuitBoard
         : Layers;
+
+export function CreateCourseModal({ onClose }) {
+  const { createCourse } = useWorkspace();
+  const [fields, setFields] = useState({ name: '', code: '', color: 'purple' });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(event) {
+    event.preventDefault();
+    setError('');
+    if (!fields.name.trim() || !fields.code.trim()) {
+      setError('Enter a course name and code.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await createCourse({
+        name: fields.name.trim(),
+        code: fields.code.trim().toUpperCase(),
+        color: fields.color,
+      });
+      onClose();
+    } catch (failure) {
+      setError(failure.message);
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      title="A home for a new course."
+      subtitle="Organize related decks under one course."
+      onClose={onClose}
+    >
+      <ErrorMessage>{error}</ErrorMessage>
+      <form onSubmit={submit}>
+        <div className="field">
+          <label htmlFor="course-name">Course name</label>
+          <input
+            id="course-name"
+            value={fields.name}
+            onChange={(event) => setFields({ ...fields, name: event.target.value })}
+            required
+            maxLength={100}
+            placeholder="e.g. Software Engineering"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="course-code">Course code</label>
+          <input
+            id="course-code"
+            value={fields.code}
+            onChange={(event) => setFields({ ...fields, code: event.target.value })}
+            required
+            maxLength={30}
+            placeholder="e.g. COP4331"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="course-color">Color</label>
+          <select
+            id="course-color"
+            value={fields.color}
+            onChange={(event) => setFields({ ...fields, color: event.target.value })}
+          >
+            <option value="purple">Lavender</option>
+            <option value="blue">Blue</option>
+            <option value="peach">Peach</option>
+          </select>
+        </div>
+        <div className="modal-actions">
+          <button className="button secondary" type="button" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button className="button primary" disabled={busy}>
+            {busy ? 'Saving…' : 'Create course'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 export function DeckCard({ deck, courses, onDelete }) {
   const course = courseFor(courses, deck);
   const Icon = courseIcon(course?.code);

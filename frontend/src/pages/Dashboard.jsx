@@ -16,7 +16,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useWorkspace } from '../state/WorkspaceContext.jsx';
-import { DeckCard, CreateDeckModal, DeleteDeckModal } from '../components/Decks.jsx';
+import {
+  DeckCard,
+  CreateDeckModal,
+  DeleteDeckModal,
+  CreateCourseModal,
+} from '../components/Decks.jsx';
 import { EmptyState } from '../components/UI.jsx';
 import { dateLabel, filterDecks, firstName, isToday, withinLastWeek } from '../lib/format.js';
 
@@ -334,6 +339,7 @@ export function LibraryPage() {
   const [courseId, setCourseId] = useState('all');
   const [sort, setSort] = useState('recent');
   const [createOpen, setCreateOpen] = useState(false);
+  const [courseOpen, setCourseOpen] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const visible = filterDecks(decks, { query, courseId, sort });
   const filtered = query || courseId !== 'all';
@@ -344,10 +350,16 @@ export function LibraryPage() {
         title="A home for every aha."
         subtitle="Your courses and curiosities, one deck at a time."
       >
-        <button className="button primary" onClick={() => setCreateOpen(true)}>
-          <Plus size={17} />
-          Create deck
-        </button>
+        <div className="button-group">
+          <button className="button secondary" onClick={() => setCourseOpen(true)}>
+            <Plus size={16} />
+            New course
+          </button>{' '}
+          <button className="button primary" onClick={() => setCreateOpen(true)}>
+            <Plus size={17} />
+            Create deck
+          </button>
+        </div>
       </PageHeading>
       <div className="library-toolbar">
         <div className="search-field">
@@ -391,7 +403,7 @@ export function LibraryPage() {
               onClick={() => setCourseId(course.id)}
             >
               <span className={`course-dot ${course.color || 'purple'}`} />
-              {course.code}
+              {course.code || course.name}
             </button>
           ))}
         </div>
@@ -444,6 +456,7 @@ export function LibraryPage() {
         </EmptyState>
       )}
       {createOpen && <CreateDeckModal onClose={() => setCreateOpen(false)} />}
+      {courseOpen && <CreateCourseModal onClose={() => setCourseOpen(false)} />}
       {deleting && <DeleteDeckModal deck={deleting} onClose={() => setDeleting(null)} />}
     </>
   );

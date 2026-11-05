@@ -117,6 +117,17 @@ function update(userId, action) {
 }
 
 export const demoWorkspace = {
+  async createCourse(userId, fields) {
+    return update(userId, (workspace) => {
+      if (
+        workspace.courses.some((course) => course.name.toLowerCase() === fields.name.toLowerCase())
+      )
+        throw new ServiceError('A course with that name already exists.');
+      const course = { id: crypto.randomUUID(), ...fields };
+      workspace.courses.push(course);
+      return course;
+    });
+  },
   async load(userId) {
     return load(userId);
   },

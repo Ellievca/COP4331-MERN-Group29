@@ -8,8 +8,8 @@ import {
 import { demoAuth, demoWorkspace } from './demo.js';
 import { readStored, SESSION_KEY } from '../lib/storage.js';
 
-// Provisional REST contract. Change routes, payloads, and normalization here
-// when the API team supplies its contract; components do not call fetch.
+// The bundled Express server implements this contract. Keep teammate-specific
+// mappings here when reconciling their backend; components do not call fetch.
 export const authService = {
   async register(fields) {
     return IS_DEMO
@@ -28,21 +28,42 @@ export const authService = {
   async restore() {
     if (IS_DEMO) return demoAuth.restore();
     const saved = readStored(sessionStorage, SESSION_KEY, null);
-    if (saved?.mode !== 'api') return null;
-    const result = await request('/api/auth/me', { token: saved.accessToken });
+    let result;
+    try {
+      result = await request('/api/auth/me', {
+        token: saved?.mode === 'api' ? saved.accessToken : undefined,
+      });
+    } catch (failure) {
+      if (failure.status === 401) return null;
+      throw failure;
+    }
     if (!result?.user?.id && !result?.user?._id) return null;
-    return { ...saved, user: normalizeUser(result.user) };
+    return { user: normalizeUser(result.user), csrfToken: result.csrfToken, mode: 'api' };
   },
   async logout(session) {
     if (!IS_DEMO)
-      await request('/api/auth/logout', { method: 'POST', token: session?.accessToken });
+      await request('/api/auth/logout', {
+        method: 'POST',
+        token: session?.accessToken,
+        csrfToken: session?.csrfToken,
+      });
   },
 };
 
 export const workspaceService = {
+  async createCourse(session, fields) {
+    return IS_DEMO
+      ? demoWorkspace.createCourse(session.user.id, fields)
+      : request('/api/courses', {
+          method: 'POST',
+          body: fields,
+          token: session.accessToken,
+          csrfToken: session.csrfToken,
+        });
+  },
   async load(session) {
     if (IS_DEMO) return demoWorkspace.load(session.user.id);
-    const options = { token: session.accessToken };
+    const options = { token: session.accessToken, csrfToken: session.csrfToken };
     const [decks, courses, sessions] = await Promise.all([
       request('/api/decks', options),
       request('/api/courses', options),
@@ -70,6 +91,7 @@ export const workspaceService = {
       : (
           await request(`/api/decks/${encodeURIComponent(id)}/cards`, {
             token: session.accessToken,
+            csrfToken: session.csrfToken,
           })
         ).map((card) => ({ ...card, id: card.id || card._id }));
   },
@@ -77,7 +99,12 @@ export const workspaceService = {
     return IS_DEMO
       ? demoWorkspace.createDeck(session.user.id, fields)
       : normalizeDeck(
-          await request('/api/decks', { method: 'POST', body: fields, token: session.accessToken }),
+          await request('/api/decks', {
+            method: 'POST',
+            body: fields,
+            token: session.accessToken,
+            csrfToken: session.csrfToken,
+          }),
         );
   },
   async deleteDeck(session, id) {
@@ -86,6 +113,7 @@ export const workspaceService = {
       : request(`/api/decks/${encodeURIComponent(id)}`, {
           method: 'DELETE',
           token: session.accessToken,
+          csrfToken: session.csrfToken,
         });
   },
   async addCard(session, id, fields) {
@@ -95,6 +123,7 @@ export const workspaceService = {
           method: 'POST',
           body: fields,
           token: session.accessToken,
+          csrfToken: session.csrfToken,
         });
   },
   async deleteCard(session, id, cardId) {
@@ -103,6 +132,7 @@ export const workspaceService = {
       : request(`/api/decks/${encodeURIComponent(id)}/cards/${encodeURIComponent(cardId)}`, {
           method: 'DELETE',
           token: session.accessToken,
+          csrfToken: session.csrfToken,
         });
   },
   async recordSession(session, fields) {
@@ -112,6 +142,26 @@ export const workspaceService = {
           method: 'POST',
           body: fields,
           token: session.accessToken,
+          csrfToken: session.csrfToken,
         });
+  },
+};
+
+export const adminService = {
+  async load(session) {
+    const options = { csrfToken: session.csrfToken, token: session.accessToken };
+    const [stats, users] = await Promise.all([
+      request('/api/admin/stats', options),
+      request('/api/admin/users', options),
+    ]);
+    return { stats, users };
+  },
+  async setActive(session, id, isActive) {
+    return request('/api/admin/users/' + encodeURIComponent(id) + '/activation', {
+      method: 'PATCH',
+      body: { isActive },
+      csrfToken: session.csrfToken,
+      token: session.accessToken,
+    });
   },
 };
