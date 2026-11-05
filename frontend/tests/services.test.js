@@ -1,7 +1,12 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { demoAuth, demoWorkspace } from '../src/services/demo.js';
-import { request, ServiceError } from '../src/services/client.js';
+import {
+  request,
+  ServiceError,
+  normalizeLoginResponse,
+  LOGIN_FAILURE_MESSAGE,
+} from '../src/services/client.js';
 import { filterDecks } from '../src/lib/format.js';
 import { SESSION_KEY } from '../src/lib/storage.js';
 
@@ -160,6 +165,46 @@ test('the API client propagates authentication failures and reports non-JSON or 
     await assert.rejects(request('/api/decks'), /could not reach the server/);
     globalThis.fetch = async () => new Response(null, { status: 204 });
     assert.equal(await request('/api/decks/1', { method: 'DELETE' }), undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('course-style API login failures always use the generic error-page status', async () => {
+  const originalFetch = globalThis.fetch;
+  const isGenericFailure = (error) =>
+    error instanceof ServiceError &&
+    error.status === 401 &&
+    error.message === LOGIN_FAILURE_MESSAGE;
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: 'User does not exist' }), { status: 200 });
+    await assert.rejects(
+      request('/api/auth/login', { method: 'POST', body: {}, applicationErrorStatus: 401 }),
+      isGenericFailure,
+    );
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: 'Password is incorrect' }), { status: 403 });
+    await assert.rejects(
+      request('/api/auth/login', { method: 'POST', body: {}, applicationErrorStatus: 401 }),
+      isGenericFailure,
+    );
+    globalThis.fetch = async () => new Response(null, { status: 403 });
+    await assert.rejects(
+      request('/api/auth/login', { method: 'POST', body: {}, applicationErrorStatus: 401 }),
+      isGenericFailure,
+    );
+    for (const reply of [
+      { id: -1, error: '' },
+      { id: 0 },
+      { success: false },
+      { user: { id: -1 } },
+    ])
+      assert.throws(() => normalizeLoginResponse(reply), isGenericFailure);
+    const valid = normalizeLoginResponse({
+      user: { _id: '507f1f77bcf86cd799439011', firstName: 'Test' },
+    });
+    assert.equal(valid.user.id, '507f1f77bcf86cd799439011');
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -1,4 +1,10 @@
-import { IS_DEMO, request, normalizeUser, normalizeDeck, ServiceError } from './client.js';
+import {
+  IS_DEMO,
+  request,
+  normalizeUser,
+  normalizeDeck,
+  normalizeLoginResponse,
+} from './client.js';
 import { demoAuth, demoWorkspace } from './demo.js';
 import { readStored, SESSION_KEY } from '../lib/storage.js';
 
@@ -12,12 +18,12 @@ export const authService = {
   },
   async login(fields) {
     if (IS_DEMO) return demoAuth.login(fields);
-    const result = await request('/api/auth/login', { method: 'POST', body: fields });
-    if (!result?.user?.id && !result?.user?._id)
-      throw new ServiceError(
-        'The login response is missing user information. Check the API adapter.',
-      );
-    return { user: normalizeUser(result.user), accessToken: result.accessToken, mode: 'api' };
+    const result = await request('/api/auth/login', {
+      method: 'POST',
+      body: fields,
+      applicationErrorStatus: 401,
+    });
+    return normalizeLoginResponse(result);
   },
   async restore() {
     if (IS_DEMO) return demoAuth.restore();

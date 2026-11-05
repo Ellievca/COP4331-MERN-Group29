@@ -37,7 +37,7 @@ The request helper supports secure server cookies using `credentials: include`, 
 
 During this initial scaffold, bearer access tokens are held in sessionStorage if supplied; review token storage with the API team before production. All ownership/role checks must run on the server; the demo client is not an authorization boundary. Backend password hashing must use a suitable server-side password hashing library rather than the browser demo code.
 
-The client handles non-2xx HTTP responses, HTTP-200 `{ error: "..." }` responses, network failures, timeouts, and malformed JSON. Map your backend's invalid-login condition to a generic 401 error so the dedicated error-page route is used. Avoid displaying which part of the credentials was wrong.
+The client handles non-2xx HTTP responses, HTTP-200 `{ error: "..." }` responses, network failures, timeouts, and malformed JSON. The login adapter normalizes HTTP-200 errors, HTTP 401/403 authentication failures, `{ success: false }`, and zero/negative user IDs to a generic 401 failure so the dedicated error-page route is used. Map any additional invalid-login signals in your backend's contract to that same flow. Avoid displaying which part of the credentials was wrong.
 
 ## Open questions for the API team
 

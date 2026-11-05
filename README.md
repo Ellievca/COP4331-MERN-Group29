@@ -45,6 +45,8 @@ Never put a MongoDB connection string, database password, signing secret, or pri
 
 ## Frontend lab demonstration
 
+See the [point-by-point rubric audit and acceptance run](docs/LAB_RUBRIC.md) for the exact seven requirements, current evidence, and remaining deployment gates.
+
 | Rubric item                                        | Current state                                                 |
 | -------------------------------------------------- | ------------------------------------------------------------- |
 | Domain name (10%)                                  | Pending deployment and the group's domain/DNS setup.          |
