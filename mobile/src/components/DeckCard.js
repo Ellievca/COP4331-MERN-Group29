@@ -6,7 +6,8 @@ import { plural } from '../utils/format';
 
 // A deck in a list: course label, title, description, and card count.
 // `course` is the deck's course object (or undefined if it has none).
-export default function DeckCard({ deck, course, onPress }) {
+// Pass `onDelete` to show a trash button.
+export default function DeckCard({ deck, course, onPress, onDelete }) {
   const tint = tintFor(course?.color);
   return (
     <Pressable
@@ -36,7 +37,19 @@ export default function DeckCard({ deck, course, onPress }) {
           <Ionicons name="layers-outline" size={15} color={colors.muted} />
           <Text style={styles.metaText}>{plural(deck.cardCount, 'card')}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        <View style={styles.actions}>
+          {onDelete ? (
+            <Pressable
+              onPress={onDelete}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${deck.title}`}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.muted} />
+            </Pressable>
+          ) : null}
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </View>
       </View>
     </Pressable>
   );

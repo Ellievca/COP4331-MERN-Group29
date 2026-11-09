@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getCourses, getDecks, getStudySessions, logout } from '../api';
+import { useFocusEffect } from '@react-navigation/native';
+import { getCourses, getDecks, getStudySessions } from '../api';
+import { useAuth } from '../state/AuthContext';
 import { colors } from '../styles/theme';
 import { common } from '../styles/common';
 import { statStyles } from '../styles/components';
@@ -17,24 +19,11 @@ import ErrorBanner from '../components/ErrorBanner';
 import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
 
-// Props:
-//   user            – the signed-in user
-//   onLoggedOut()   – called after signing out
-//   onOpenDeck(deck), onStudyDeck(deck), onSeeAllDecks(), onSeeHistory(), onCreateDeck()
-//                   – where the buttons go (wired up as the other screens get built)
-export default function HomeScreen({
-  user,
-  onLoggedOut,
-  onOpenDeck,
-  onStudyDeck,
-  onSeeAllDecks,
-  onSeeHistory,
-  onCreateDeck,
-}) {
+export default function HomeScreen({ navigation }) {
+  const { user } = useAuth();
   const [data, setData] = useState(null); // { courses, decks, sessions }
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   // Load everything the home screen needs at once.
   const load = useCallback(async () => {
@@ -51,9 +40,12 @@ export default function HomeScreen({
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Reload every time this tab comes into view, so new decks/sessions show up.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -61,15 +53,8 @@ export default function HomeScreen({
     setRefreshing(false);
   }
 
-  async function handleLogout() {
-    setSigningOut(true);
-    try {
-      await logout();
-    } catch {
-      // Even if the server call fails, sign out on this phone.
-    }
-    onLoggedOut();
-  }
+  const openDeck = (deck) => navigation.navigate('Deck', { deckId: deck.id, title: deck.title });
+  const studyDeck = (deck) => navigation.navigate('Study', { deckId: deck.id, title: deck.title });
 
   const summary = data ? homeSummary(data) : null;
   const courseOf = (deck) => data?.courses.find((c) => c.id === deck.courseId);
@@ -95,9 +80,15 @@ export default function HomeScreen({
               A little focus today. A little more confidence tomorrow.
             </Text>
           </View>
-          <View style={common.avatar} accessibilityLabel={`Signed in as ${user.firstName}`}>
+          <Pressable
+            style={common.avatar}
+            onPress={() => navigation.navigate('Account')}
+            accessibilityRole="button"
+            accessibilityLabel="Your account"
+            hitSlop={6}
+          >
             <Text style={common.avatarText}>{initials(user)}</Text>
-          </View>
+          </Pressable>
         </View>
 
         <ErrorBanner message={error} />
@@ -115,7 +106,7 @@ export default function HomeScreen({
             <StudyHero
               deck={summary.recommended}
               onPress={() =>
-                summary.recommended ? onStudyDeck(summary.recommended) : onSeeAllDecks()
+                summary.recommended ? studyDeck(summary.recommended) : navigation.navigate('Decks')
               }
             />
 
@@ -144,7 +135,7 @@ export default function HomeScreen({
                 title="Pick up a little knowledge"
                 subtitle="Your decks, ready when you are."
                 linkText={summary.deckCount ? 'View all' : null}
-                onLinkPress={onSeeAllDecks}
+                onLinkPress={() => navigation.navigate('Decks')}
               />
               {summary.recentDecks.length ? (
                 <View style={common.list}>
@@ -153,7 +144,7 @@ export default function HomeScreen({
                       key={deck.id}
                       deck={deck}
                       course={courseOf(deck)}
-                      onPress={() => onOpenDeck(deck)}
+                      onPress={() => openDeck(deck)}
                     />
                   ))}
                 </View>
@@ -163,7 +154,10 @@ export default function HomeScreen({
                   title="A fresh start for your ideas."
                   text="Start with one topic. Add a few cards. See where it takes you."
                 >
-                  <PrimaryButton title="Create your first deck" onPress={onCreateDeck} />
+                  <PrimaryButton
+                    title="Create your first deck"
+                    onPress={() => navigation.navigate('Decks', { create: Date.now() })}
+                  />
                 </EmptyState>
               )}
             </View>
@@ -173,7 +167,7 @@ export default function HomeScreen({
                 title="A little progress lately"
                 subtitle="Every study session counts."
                 linkText={data.sessions.length ? 'History' : null}
-                onLinkPress={onSeeHistory}
+                onLinkPress={() => navigation.navigate('History')}
               />
               {summary.recentSessions.length ? (
                 <View style={common.list}>
@@ -191,10 +185,6 @@ export default function HomeScreen({
             </View>
           </>
         )}
-
-        <View style={common.section}>
-          <SecondaryButton title="Sign out" onPress={handleLogout} loading={signingOut} />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -22,6 +22,7 @@ export const colors = {
   successBorder: '#e5eedd',
   ringTrack: '#efebf8', // daily goal ring
   ring: '#8664d9',
+  backdrop: 'rgba(48, 42, 64, 0.35)', // dims the screen behind pop-up sheets
 };
 
 // Course colors: the server stores 'purple', 'blue', 'peach' (or a custom hex).

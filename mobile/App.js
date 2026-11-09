@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getCurrentUser, setUnauthorizedHandler } from './src/api';
+import { AuthContext } from './src/state/AuthContext';
 import { colors } from './src/styles/theme';
 import { common } from './src/styles/common';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import HomeScreen from './src/screens/HomeScreen';
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -28,13 +29,17 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
-  function handleLoggedOut() {
-    setUser(null);
-    setAuthScreen('login');
-  }
-
-  // Temporary until the Decks, Deck, Study and History screens exist.
-  const comingNext = (what) => () => Alert.alert('Coming next', `${what} is the next screen we build.`);
+  // What every signed-in screen can read with useAuth().
+  const auth = useMemo(
+    () => ({
+      user,
+      signOut: () => {
+        setUser(null);
+        setAuthScreen('login');
+      },
+    }),
+    [user],
+  );
 
   let screen;
   if (checking) {
@@ -44,16 +49,11 @@ export default function App() {
       </View>
     );
   } else if (user) {
+    // Signed in: tab bar (Home / Decks / History) and the screens that open from it.
     screen = (
-      <HomeScreen
-        user={user}
-        onLoggedOut={handleLoggedOut}
-        onOpenDeck={comingNext('The deck screen')}
-        onStudyDeck={comingNext('Study mode')}
-        onSeeAllDecks={comingNext('The decks screen')}
-        onSeeHistory={comingNext('The history screen')}
-        onCreateDeck={comingNext('Creating decks')}
-      />
+      <AuthContext.Provider value={auth}>
+        <AppNavigator />
+      </AuthContext.Provider>
     );
   } else if (authScreen === 'register') {
     screen = <RegisterScreen onRegistered={setUser} onBack={() => setAuthScreen('login')} />;

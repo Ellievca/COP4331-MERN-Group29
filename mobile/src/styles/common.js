@@ -109,6 +109,51 @@ export const common = StyleSheet.create({
   // Space between stacked cards/rows in a list
   list: { gap: spacing.md },
 
+  // Two buttons side by side (e.g. "New course" + "Create deck")
+  buttonRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  buttonRowItem: { flex: 1, height: size.buttonHeight, marginTop: 0 },
+
+  // Search + sort + filters area at the top of a list page
+  toolbar: { gap: spacing.md, marginBottom: spacing.lg },
+  toolbarRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  resultCount: { fontSize: fontSize.small, color: colors.muted },
+  sortButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
+  sortText: { fontSize: fontSize.small, color: colors.purple, fontWeight: fontWeight.semibold },
+
+  // Simple centered message page (placeholders, account)
+  messagePage: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  messageText: {
+    fontSize: fontSize.body,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: spacing.sm,
+  },
+
+  // Label/value lines on the account page
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  infoLabel: { fontSize: fontSize.label, color: colors.muted },
+  infoValue: { fontSize: fontSize.label, color: colors.ink, fontWeight: fontWeight.semibold, flexShrink: 1 },
+  avatarLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.md,
+  },
+  avatarLargeText: { color: colors.purple, fontSize: fontSize.title, fontWeight: fontWeight.bold },
+  centerText: { textAlign: 'center' },
+
   // ---- StudySync logo block ----
   brand: { alignItems: 'center', marginBottom: 28 },
   logo: {

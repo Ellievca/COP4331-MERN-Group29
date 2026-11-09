@@ -1,4 +1,4 @@
-// Checks the register form on the phone before anything is sent.
+// Checks forms on the phone before anything is sent.
 // These rules mirror server/src/validation.js so the server never rejects a form
 // that looked fine here (its own error messages are too technical to show users).
 
@@ -43,5 +43,23 @@ export function validateRegister({ firstName, lastName, email, username, passwor
   if (!confirm) errors.confirm = 'Type your password again.';
   else if (confirm !== password) errors.confirm = "Passwords don't match.";
 
+  return errors;
+}
+
+// ---------- Decks and courses (mirror server/src/validation.js) ----------
+
+export function validateDeck({ title, description }) {
+  const errors = {};
+  if (!title.trim()) errors.title = 'Give your deck a title.';
+  else if (title.trim().length > 80) errors.title = 'Use 80 characters or fewer.';
+  if (description.trim().length > 240) errors.description = 'Use 240 characters or fewer.';
+  return errors;
+}
+
+export function validateCourse({ name, code }) {
+  const errors = {};
+  if (!name.trim()) errors.name = 'Give your course a name.';
+  else if (name.trim().length > 100) errors.name = 'Use 100 characters or fewer.';
+  if (code.trim().length > 30) errors.code = 'Use 30 characters or fewer.';
   return errors;
 }

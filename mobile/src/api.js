@@ -155,3 +155,31 @@ export function getDecks() {
 export function getStudySessions() {
   return request('/study-sessions');
 }
+
+// { name, code?, color? } → the new course. color is 'purple', 'blue' or 'peach'.
+export async function createCourse({ name, code = '', color = 'purple' }) {
+  try {
+    return await request('/courses', {
+      method: 'POST',
+      body: { name: name.trim(), code: code.trim(), color },
+    });
+  } catch (error) {
+    // The server's 409 message also mentions usernames and emails; keep it about courses.
+    if (error.status === 409)
+      throw new ApiError('You already have a course with that name.', 409, error.code);
+    throw error;
+  }
+}
+
+// { title, description?, courseId? } → the new deck (with cardCount: 0)
+export function createDeck({ title, description = '', courseId = null }) {
+  return request('/decks', {
+    method: 'POST',
+    body: { title: title.trim(), description: description.trim(), courseId },
+  });
+}
+
+// Deletes the deck and all of its cards. Can't be undone.
+export function deleteDeck(deckId) {
+  return request(`/decks/${deckId}`, { method: 'DELETE' });
+}

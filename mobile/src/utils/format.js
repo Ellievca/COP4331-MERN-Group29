@@ -85,3 +85,52 @@ export function homeSummary({ decks, sessions, now = new Date() }) {
     week: weekStrip(sessions, now),
   };
 }
+
+// ---------- Decks screen ----------
+
+// The three sort choices, same as the website's dropdown.
+export const SORT_OPTIONS = [
+  { key: 'recent', label: 'Recently updated' },
+  { key: 'title', label: 'Title: A to Z' },
+  { key: 'cards', label: 'Most cards' },
+];
+
+// Search + course filter + sort, ported from the web app's filterDecks().
+// courseId 'all' means every course (including decks with no course).
+export function filterDecks(decks, { query = '', courseId = 'all', sort = 'recent' } = {}) {
+  const term = query.trim().toLowerCase();
+  return decks
+    .filter(
+      (deck) =>
+        (courseId === 'all' || deck.courseId === courseId) &&
+        `${deck.title} ${deck.description || ''}`.toLowerCase().includes(term),
+    )
+    .sort((a, b) =>
+      sort === 'title'
+        ? a.title.localeCompare(b.title)
+        : sort === 'cards'
+          ? b.cardCount - a.cardCount
+          : new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt),
+    );
+}
+
+// How many decks each course has, for the filter chips: { courseId: count }
+export function deckCountsByCourse(decks) {
+  const counts = {};
+  for (const deck of decks) if (deck.courseId) counts[deck.courseId] = (counts[deck.courseId] || 0) + 1;
+  return counts;
+}
+
+// ---------- History screen ----------
+
+export function historySummary(sessions) {
+  const reviewed = sessions.reduce((sum, s) => sum + s.cardsReviewed, 0);
+  const correct = sessions.reduce((sum, s) => sum + s.cardsCorrect, 0);
+  return {
+    sessionCount: sessions.length,
+    reviewed,
+    // "—" until there's something to measure, like the website
+    recallRate: reviewed ? `${Math.round((correct / reviewed) * 100)}%` : '—',
+    sessions: sortSessionsRecent(sessions),
+  };
+}

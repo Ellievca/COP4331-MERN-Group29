@@ -204,6 +204,7 @@ export const deckStyles = StyleSheet.create({
   },
   meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metaText: { fontSize: fontSize.caption, color: colors.muted },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });
 
 // One past study session
@@ -265,4 +266,120 @@ export const emptyStyles = StyleSheet.create({
     textAlign: 'center',
   },
   text: { fontSize: fontSize.small, color: colors.muted, textAlign: 'center', lineHeight: 19 },
+});
+
+// Small rounded filter buttons (course filter, color picker, ...)
+export const chipStyles = StyleSheet.create({
+  row: { gap: spacing.sm, paddingVertical: 2 },
+  wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+  },
+  selected: { backgroundColor: colors.lavender, borderColor: colors.purple },
+  pressed: { opacity: 0.7 },
+  dot: { width: 8, height: 8, borderRadius: radius.pill },
+  text: { fontSize: fontSize.label, color: colors.ink, fontWeight: fontWeight.semibold },
+  textSelected: { color: colors.purple },
+  count: { fontSize: fontSize.caption, color: colors.muted },
+});
+
+// Search box with a magnifying glass
+export const searchStyles = StyleSheet.create({
+  box: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: size.inputHeight,
+    paddingHorizontal: 14,
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+  },
+  input: { flex: 1, height: '100%', fontSize: fontSize.input, color: colors.ink },
+});
+
+// Pop-up panel that slides up from the bottom (create deck, confirm delete, ...)
+export const sheetStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'flex-end' },
+  dismissArea: { flex: 1 },
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    maxHeight: '90%',
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  headerText: { flex: 1 },
+  title: { fontSize: fontSize.title, fontWeight: fontWeight.bold, color: colors.ink },
+  subtitle: { fontSize: fontSize.body, color: colors.muted, marginTop: spacing.xxs },
+  close: {
+    width: size.icon,
+    height: size.icon,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fieldLabel: {
+    fontSize: fontSize.label,
+    fontWeight: fontWeight.semibold,
+    color: colors.ink,
+    marginBottom: spacing.sm,
+  },
+  group: { marginBottom: spacing.lg },
+  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  // buttons sharing a row: same height, no extra top margin
+  action: { flex: 1, height: size.buttonHeight, marginTop: 0 },
+});
+
+// Red "Delete" button for confirm sheets
+export const dangerStyles = StyleSheet.create({
+  button: {
+    height: size.buttonHeight,
+    borderRadius: radius.button,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.xxs,
+  },
+  pressed: { opacity: 0.85 },
+  text: { color: colors.white, fontSize: fontSize.input, fontWeight: fontWeight.bold },
+});
+
+// Bottom tab bar and the top bar on pushed screens (Deck, Account, ...)
+export const navStyles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: colors.white,
+    borderTopColor: colors.border,
+  },
+  tabLabel: { fontWeight: fontWeight.semibold }, // default size fits every tab bar height
+  header: { backgroundColor: colors.background },
+  content: { backgroundColor: colors.background },
+  headerTitle: { color: colors.ink, fontWeight: fontWeight.bold, fontSize: fontSize.input },
 });
