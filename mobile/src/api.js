@@ -79,6 +79,34 @@ export async function login(username, password) {
   }
 }
 
+// Creates the account, then signs in with it, so a new user lands straight in the app.
+// (The server's register endpoint doesn't start a session by itself.)
+// If the team adds email verification, this is where "check your email" will go.
+export async function register({ firstName, lastName, email, username, password }) {
+  try {
+    await request('/auth/register', {
+      method: 'POST',
+      body: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        login: username.trim(),
+        password,
+      },
+    });
+  } catch (error) {
+    if (error.status === 409) {
+      throw new ApiError(
+        'That username or email is already in use. Try a different one, or sign in instead.',
+        409,
+        error.code,
+      );
+    }
+    throw error;
+  }
+  return login(username, password);
+}
+
 // Called when the app opens. Returns the signed-in user, or null if signed out.
 export async function getCurrentUser() {
   try {

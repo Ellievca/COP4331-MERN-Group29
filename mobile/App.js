@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getCurrentUser } from './src/api';
-import { colors } from './src/theme';
+import { colors } from './src/styles/theme';
+import { common } from './src/styles/common';
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  // Which signed-out screen to show: 'login' or 'register'.
+  const [authScreen, setAuthScreen] = useState('login');
 
   // When the app opens, ask the server if we're still signed in from last time.
   useEffect(() => {
@@ -19,21 +23,25 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
+  function handleLoggedOut() {
+    setUser(null);
+    setAuthScreen('login');
+  }
+
   let screen;
   if (checking) {
     screen = (
-      <View style={styles.loading}>
+      <View style={common.loading}>
         <ActivityIndicator size="large" color={colors.purple} />
       </View>
     );
   } else if (user) {
-    screen = <HomeScreen user={user} onLoggedOut={() => setUser(null)} />;
+    screen = <HomeScreen user={user} onLoggedOut={handleLoggedOut} />;
+  } else if (authScreen === 'register') {
+    screen = <RegisterScreen onRegistered={setUser} onBack={() => setAuthScreen('login')} />;
   } else {
     screen = (
-      <LoginScreen
-        onLoggedIn={setUser}
-        onCreateAccount={() => Alert.alert('Coming next', 'The register screen is the next step.')}
-      />
+      <LoginScreen onLoggedIn={setUser} onCreateAccount={() => setAuthScreen('register')} />
     );
   }
 
@@ -44,12 +52,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-});
