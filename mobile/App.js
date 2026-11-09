@@ -9,6 +9,11 @@ import { common } from './src/styles/common';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import AppNavigator from './src/navigation/AppNavigator';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep the StudySync splash screen up until we know whether you're signed in,
+// so the app goes straight from the logo to the right screen (no spinner flash).
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -23,10 +28,17 @@ export default function App() {
       setUser(null);
       setAuthScreen('login');
     });
+    // If the server is slow, don't hold the splash forever: the spinner takes over after 4s.
+    const splashTimer = setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 4000);
     getCurrentUser()
       .then(setUser)
       .catch(() => setUser(null)) // offline or server down: just show login
-      .finally(() => setChecking(false));
+      .finally(() => {
+        clearTimeout(splashTimer);
+        setChecking(false);
+        SplashScreen.hideAsync().catch(() => {});
+      });
+    return () => clearTimeout(splashTimer);
   }, []);
 
   // What every signed-in screen can read with useAuth().
