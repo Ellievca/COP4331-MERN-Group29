@@ -147,3 +147,10 @@ export function filterCards(cards, query = '') {
 export function cardNumber(index) {
   return String(index + 1).padStart(2, '0');
 }
+
+// ---------- Study mode ----------
+
+// 7 of 9 → 78 (a whole-number percent)
+export function recallPercent(correct, reviewed) {
+  return reviewed ? Math.round((correct / reviewed) * 100) : 0;
+}

@@ -362,7 +362,7 @@ export const sheetStyles = StyleSheet.create({
   group: { marginBottom: spacing.lg },
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   // buttons sharing a row: same height, no extra top margin
-  action: { flex: 1, height: size.buttonHeight, marginTop: 0 },
+  action: { flex: 1, height: size.buttonHeight, marginTop: 0, paddingHorizontal: spacing.sm },
 });
 
 // Red "Delete" button for confirm sheets
@@ -446,4 +446,78 @@ export const noticeStyles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   text: { flex: 1, fontSize: fontSize.label, color: colors.success, lineHeight: 20 },
+});
+
+// Study mode: progress bar, the big flip card, buttons, and the finish screen
+export const studyStyles = StyleSheet.create({
+  // "YOUR FOCUS SESSION        3 / 18 cards"
+  progressLabel: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  progressEyebrow: { fontSize: fontSize.eyebrow, letterSpacing: 1.5, color: colors.muted, fontWeight: fontWeight.semibold },
+  progressCount: { fontSize: fontSize.section, fontWeight: fontWeight.bold, color: colors.ink },
+  progressOf: { fontSize: fontSize.small, fontWeight: '400', color: colors.muted },
+  track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.ringTrack, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.ring },
+
+  // The card you tap to flip
+  card: {
+    ...panel,
+    borderRadius: radius.card,
+    minHeight: 300,
+    padding: spacing.xl,
+    marginTop: spacing.xl,
+    justifyContent: 'space-between',
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  cardBack: { backgroundColor: colors.heroFill, borderColor: colors.heroRing },
+  cardLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  cardLabelText: { fontSize: fontSize.eyebrow, letterSpacing: 1.5, fontWeight: fontWeight.bold, color: colors.purple },
+  cardContent: {
+    fontSize: fontSize.title,
+    lineHeight: 30,
+    fontWeight: fontWeight.bold,
+    color: colors.ink,
+    textAlign: 'center',
+    marginVertical: spacing.xl,
+  },
+  cardContentLong: { fontSize: fontSize.section, lineHeight: 26 },
+  cardHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  cardHintText: { fontSize: fontSize.small, color: colors.muted },
+
+  // Under the card
+  controls: { marginTop: spacing.xl, gap: spacing.md },
+  prompt: { fontSize: fontSize.body, color: colors.muted, textAlign: 'center' },
+  note: { fontSize: fontSize.small, color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
+
+  // Finish screen
+  complete: { alignItems: 'center', paddingTop: spacing.xl },
+  art: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.pill,
+    backgroundColor: colors.heroFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  completeEyebrow: {
+    fontSize: fontSize.eyebrow,
+    letterSpacing: 1.5,
+    color: colors.purple,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.sm,
+  },
+  completeText: { fontSize: fontSize.body, color: colors.muted, textAlign: 'center', lineHeight: 22, marginTop: spacing.sm },
+  stats: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xl, marginBottom: spacing.lg },
+  buttons: { alignSelf: 'stretch', gap: spacing.md },
+  stretch: { alignSelf: 'stretch' },
 });

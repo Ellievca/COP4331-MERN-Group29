@@ -223,3 +223,23 @@ export function updateCard(deckId, cardId, { front, back }) {
 export function deleteCard(deckId, cardId) {
   return request(`/decks/${deckId}/cards/${cardId}`, { method: 'DELETE' });
 }
+
+// ---------- Study sessions ----------
+
+// Saves a finished study session. `clientSessionId` makes retries safe:
+// sending the same one twice saves the session only once.
+export function saveStudySession({ deck, clientSessionId, startedAt, endedAt, cardsReviewed, cardsCorrect }) {
+  return request('/study-sessions', {
+    method: 'POST',
+    body: {
+      clientSessionId,
+      deckId: deck.id,
+      courseId: deck.courseId || null,
+      deckTitle: deck.title,
+      startedAt,
+      endedAt,
+      cardsReviewed,
+      cardsCorrect,
+    },
+  });
+}

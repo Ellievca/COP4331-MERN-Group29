@@ -111,7 +111,10 @@ export default function HomeScreen({ navigation }) {
             />
 
             <View style={statStyles.row}>
-              <StatTile icon="book-outline" value={summary.deckCount} label="My decks" />
+              <StatTile icon="book-outline" 
+                value={summary.deckCount} 
+                label="Total decks" 
+              />
               <StatTile
                 icon="layers-outline"
                 value={summary.totalCards}
@@ -121,7 +124,7 @@ export default function HomeScreen({ navigation }) {
               <StatTile
                 icon="trending-up-outline"
                 value={summary.weekReviewed}
-                label="This week"
+                label="Reviewed"
                 tint="peach"
               />
             </View>

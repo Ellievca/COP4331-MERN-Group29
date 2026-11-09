@@ -111,7 +111,8 @@ export const common = StyleSheet.create({
 
   // Two buttons side by side (e.g. "New course" + "Create deck")
   buttonRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  buttonRowItem: { flex: 1, height: size.buttonHeight, marginTop: 0 },
+  // narrower side padding so longer labels (e.g. "Needs practice") fit on one line
+  buttonRowItem: { flex: 1, height: size.buttonHeight, marginTop: 0, paddingHorizontal: spacing.sm },
 
   // Search + sort + filters area at the top of a list page
   toolbar: { gap: spacing.md, marginBottom: spacing.lg },

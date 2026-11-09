@@ -19,7 +19,7 @@ import DecksScreen from '../screens/DecksScreen';
 import DeckScreen from '../screens/DeckScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import AccountScreen from '../screens/AccountScreen';
-import ComingSoonScreen from '../screens/ComingSoonScreen';
+import StudyScreen from '../screens/StudyScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -88,15 +88,7 @@ export default function AppNavigator() {
           component={DeckScreen}
           options={({ route }) => ({ title: route.params?.title || 'Deck' })}
         />
-        <Stack.Screen
-          name="Study"
-          component={ComingSoonScreen}
-          options={{ title: 'Study' }}
-          initialParams={{
-            icon: 'bulb-outline',
-            message: 'Study mode comes right after the deck screen.',
-          }}
-        />
+        <Stack.Screen name="Study" component={StudyScreen} options={{ title: 'Study' }} />
         <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
       </Stack.Navigator>
     </NavigationContainer>
