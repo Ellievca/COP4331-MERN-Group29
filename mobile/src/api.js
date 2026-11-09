@@ -9,6 +9,13 @@ import { API_URL } from './config';
 //   in the X-CSRF-Token header, or the server answers 403.
 let csrfToken = null;
 
+// If the session runs out while the app is open, the server answers 401.
+// App.js registers a function here that sends the user back to the login screen.
+let onUnauthorized = null;
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
 const LOGIN_FAILED = 'Login failed. Please check your username and password and try again.';
 
 export class ApiError extends Error {
@@ -50,6 +57,10 @@ export async function request(path, { method = 'GET', body } = {}) {
   if (response.status === 204) return null; // success with no body (e.g. logout)
 
   const data = await response.json().catch(() => null);
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    csrfToken = null;
+    onUnauthorized?.();
+  }
   if (!response.ok) {
     // The server sends errors as { error: "message", code: "..." }
     throw new ApiError(
@@ -125,4 +136,22 @@ export async function logout() {
   } finally {
     csrfToken = null;
   }
+}
+
+// ---------- Your study data ----------
+// Each returns an array straight from the server (newest first where it matters).
+
+// [{ id, name, code, color }]
+export function getCourses() {
+  return request('/courses');
+}
+
+// [{ id, title, description, courseId, cardCount, createdAt, updatedAt }]
+export function getDecks() {
+  return request('/decks');
+}
+
+// [{ id, deckId, deckTitle, startedAt, endedAt, cardsReviewed, cardsCorrect }]
+export function getStudySessions() {
+  return request('/study-sessions');
 }

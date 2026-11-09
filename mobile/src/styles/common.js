@@ -17,6 +17,8 @@ export const common = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
+  // Spinner shown inside a scrolling page while data loads
+  inlineLoading: { paddingVertical: 48, alignItems: 'center' },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
 
@@ -69,6 +71,43 @@ export const common = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   backText: { color: colors.purple, fontSize: fontSize.input, fontWeight: fontWeight.semibold },
+
+  // ---- Signed-in page header: big greeting on the left, avatar on the right ----
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  pageHeaderText: { flex: 1 },
+  spark: { color: colors.purple },
+  pageSubtitle: { fontSize: fontSize.body, color: colors.muted, marginTop: spacing.xs },
+  avatar: {
+    width: size.avatar,
+    height: size.avatar,
+    borderRadius: radius.pill,
+    backgroundColor: colors.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: colors.purple, fontSize: fontSize.label, fontWeight: fontWeight.bold },
+
+  // ---- Section heading with an optional "View all" link ----
+  section: { marginTop: spacing.xxl },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: { fontSize: fontSize.section, fontWeight: fontWeight.bold, color: colors.ink },
+  sectionSubtitle: { fontSize: fontSize.label, color: colors.muted, marginTop: 2 },
+  textLink: { color: colors.purple, fontSize: fontSize.label, fontWeight: fontWeight.bold },
+
+  // Space between stacked cards/rows in a list
+  list: { gap: spacing.md },
 
   // ---- StudySync logo block ----
   brand: { alignItems: 'center', marginBottom: 28 },

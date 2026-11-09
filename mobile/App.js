@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { getCurrentUser } from './src/api';
+import { getCurrentUser, setUnauthorizedHandler } from './src/api';
 import { colors } from './src/styles/theme';
 import { common } from './src/styles/common';
 import LoginScreen from './src/screens/LoginScreen';
@@ -17,6 +17,11 @@ export default function App() {
 
   // When the app opens, ask the server if we're still signed in from last time.
   useEffect(() => {
+    // If the session expires while the app is open, go back to the login screen.
+    setUnauthorizedHandler(() => {
+      setUser(null);
+      setAuthScreen('login');
+    });
     getCurrentUser()
       .then(setUser)
       .catch(() => setUser(null)) // offline or server down: just show login
@@ -28,6 +33,9 @@ export default function App() {
     setAuthScreen('login');
   }
 
+  // Temporary until the Decks, Deck, Study and History screens exist.
+  const comingNext = (what) => () => Alert.alert('Coming next', `${what} is the next screen we build.`);
+
   let screen;
   if (checking) {
     screen = (
@@ -36,7 +44,17 @@ export default function App() {
       </View>
     );
   } else if (user) {
-    screen = <HomeScreen user={user} onLoggedOut={handleLoggedOut} />;
+    screen = (
+      <HomeScreen
+        user={user}
+        onLoggedOut={handleLoggedOut}
+        onOpenDeck={comingNext('The deck screen')}
+        onStudyDeck={comingNext('Study mode')}
+        onSeeAllDecks={comingNext('The decks screen')}
+        onSeeHistory={comingNext('The history screen')}
+        onCreateDeck={comingNext('Creating decks')}
+      />
+    );
   } else if (authScreen === 'register') {
     screen = <RegisterScreen onRegistered={setUser} onBack={() => setAuthScreen('login')} />;
   } else {
