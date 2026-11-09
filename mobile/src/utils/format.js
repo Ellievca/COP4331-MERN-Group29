@@ -134,3 +134,16 @@ export function historySummary(sessions) {
     sessions: sortSessionsRecent(sessions),
   };
 }
+
+// ---------- Deck screen ----------
+
+// Cards whose question or answer contains the search text (any capitalization).
+export function filterCards(cards, query = '') {
+  const term = query.trim().toLowerCase();
+  return cards.filter((card) => `${card.front} ${card.back}`.toLowerCase().includes(term));
+}
+
+// 1 → "01", like the website's card numbers
+export function cardNumber(index) {
+  return String(index + 1).padStart(2, '0');
+}

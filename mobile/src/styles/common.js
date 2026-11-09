@@ -154,6 +154,20 @@ export const common = StyleSheet.create({
   avatarLargeText: { color: colors.purple, fontSize: fontSize.title, fontWeight: fontWeight.bold },
   centerText: { textAlign: 'center' },
 
+  // Deck page header: course label, title, description, card count
+  courseLabel: {
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
+  metaText: { fontSize: fontSize.small, color: colors.muted },
+
+  // Text button in the top bar (e.g. "Edit")
+  headerAction: { color: colors.purple, fontSize: fontSize.input, fontWeight: fontWeight.semibold },
+  headerActionButton: { paddingHorizontal: spacing.sm },
+
   // ---- StudySync logo block ----
   brand: { alignItems: 'center', marginBottom: 28 },
   logo: {

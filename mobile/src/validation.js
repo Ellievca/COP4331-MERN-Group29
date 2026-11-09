@@ -63,3 +63,12 @@ export function validateCourse({ name, code }) {
   if (code.trim().length > 30) errors.code = 'Use 30 characters or fewer.';
   return errors;
 }
+
+export function validateCard({ front, back }) {
+  const errors = {};
+  if (!front.trim()) errors.front = 'Add a question or term.';
+  else if (front.trim().length > 1000) errors.front = 'Use 1,000 characters or fewer.';
+  if (!back.trim()) errors.back = 'Add an answer or definition.';
+  else if (back.trim().length > 3000) errors.back = 'Use 3,000 characters or fewer.';
+  return errors;
+}

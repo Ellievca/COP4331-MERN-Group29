@@ -16,6 +16,7 @@ import { colors } from '../styles/theme';
 import { navStyles } from '../styles/components';
 import HomeScreen from '../screens/HomeScreen';
 import DecksScreen from '../screens/DecksScreen';
+import DeckScreen from '../screens/DeckScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import AccountScreen from '../screens/AccountScreen';
 import ComingSoonScreen from '../screens/ComingSoonScreen';
@@ -84,12 +85,8 @@ export default function AppNavigator() {
         <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
         <Stack.Screen
           name="Deck"
-          component={ComingSoonScreen}
+          component={DeckScreen}
           options={({ route }) => ({ title: route.params?.title || 'Deck' })}
-          initialParams={{
-            icon: 'layers-outline',
-            message: 'Viewing and adding flashcards is the next screen we build.',
-          }}
         />
         <Stack.Screen
           name="Study"

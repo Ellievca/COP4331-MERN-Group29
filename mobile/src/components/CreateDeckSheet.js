@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { createDeck } from '../api';
+import { createDeck, updateDeck } from '../api';
 import { validateDeck } from '../validation';
 import { tintFor } from '../styles/theme';
 import { chipStyles, sheetStyles } from '../styles/components';
@@ -14,23 +14,37 @@ import SecondaryButton from './SecondaryButton';
 const EMPTY = { title: '', description: '', courseId: null };
 
 // Pop-up form for a new deck: title, optional description, optional course.
-// Props: visible, courses, defaultCourseId, onClose(), onCreated(deck)
-export default function CreateDeckSheet({ visible, courses, defaultCourseId, onClose, onCreated }) {
+// Pass `deck` to edit that deck instead of creating one.
+// Props: visible, courses, defaultCourseId, deck (optional), onClose(), onCreated(deck)
+export default function CreateDeckSheet({
+  visible,
+  courses,
+  defaultCourseId,
+  deck,
+  onClose,
+  onCreated,
+}) {
+  const editing = Boolean(deck);
   const [form, setForm] = useState(EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const descriptionRef = useRef(null);
 
-  // Start fresh each time it opens (pre-selecting the course you're filtered to).
+  // Start fresh each time it opens: the deck's current details when editing,
+  // otherwise empty (pre-selecting the course you're filtered to).
   useEffect(() => {
     if (visible) {
-      setForm({ ...EMPTY, courseId: defaultCourseId || null });
+      setForm(
+        deck
+          ? { title: deck.title, description: deck.description || '', courseId: deck.courseId || null }
+          : { ...EMPTY, courseId: defaultCourseId || null },
+      );
       setFieldErrors({});
       setError('');
       setSaving(false);
     }
-  }, [visible, defaultCourseId]);
+  }, [visible, defaultCourseId, deck]);
 
   function update(name) {
     return (value) => {
@@ -47,8 +61,8 @@ export default function CreateDeckSheet({ visible, courses, defaultCourseId, onC
     setError('');
     setSaving(true);
     try {
-      const deck = await createDeck(form);
-      onCreated(deck);
+      const saved = editing ? await updateDeck(deck.id, form) : await createDeck(form);
+      onCreated(saved);
     } catch (e) {
       setError(e.message);
       setSaving(false);
@@ -58,8 +72,8 @@ export default function CreateDeckSheet({ visible, courses, defaultCourseId, onC
   return (
     <Sheet
       visible={visible}
-      title="Create a deck"
-      subtitle="Start with one topic. You can add cards next."
+      title={editing ? 'Edit deck' : 'Create a deck'}
+      subtitle={editing ? 'Rename it, describe it, or move it to another course.' : 'Start with one topic. You can add cards next.'}
       onClose={onClose}
       busy={saving}
     >
@@ -114,7 +128,7 @@ export default function CreateDeckSheet({ visible, courses, defaultCourseId, onC
       <View style={sheetStyles.actions}>
         <SecondaryButton title="Cancel" onPress={onClose} style={sheetStyles.action} />
         <PrimaryButton
-          title="Create deck"
+          title={editing ? 'Save changes' : 'Create deck'}
           onPress={handleCreate}
           loading={saving}
           style={sheetStyles.action}

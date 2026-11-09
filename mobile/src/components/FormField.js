@@ -5,7 +5,7 @@ import { colors } from '../styles/theme';
 import { fieldStyles as styles } from '../styles/components';
 
 // A labeled text box with an optional error or hint underneath.
-// Pass `password` to get dots plus a show/hide eye button.
+// Pass `password` to get dots plus a show/hide eye button, or `multiline` for a taller box.
 // Any other props (value, onChangeText, autoComplete, ...) go straight to TextInput.
 const FormField = forwardRef(function FormField(
   { label, error, hint, password = false, style, ...inputProps },
@@ -19,7 +19,12 @@ const FormField = forwardRef(function FormField(
       <View style={styles.inputWrap}>
         <TextInput
           ref={ref}
-          style={[styles.input, password && styles.inputWithEye, error && styles.inputError]}
+          style={[
+            styles.input,
+            password && styles.inputWithEye,
+            inputProps.multiline && styles.inputMultiline,
+            error && styles.inputError,
+          ]}
           placeholderTextColor={colors.muted}
           autoCapitalize="none"
           autoCorrect={false}

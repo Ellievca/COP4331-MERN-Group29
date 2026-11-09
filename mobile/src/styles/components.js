@@ -31,6 +31,14 @@ export const fieldStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   inputWithEye: { paddingRight: 48 },
+  // Bigger box that grows for longer text (card questions and answers)
+  inputMultiline: {
+    height: undefined,
+    minHeight: 96,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    textAlignVertical: 'top',
+  },
   inputError: { borderColor: colors.error },
   eye: { position: 'absolute', right: 14 },
   error: { color: colors.error, fontSize: fontSize.small, marginTop: spacing.xs },
@@ -382,4 +390,60 @@ export const navStyles = StyleSheet.create({
   header: { backgroundColor: colors.background },
   content: { backgroundColor: colors.background },
   headerTitle: { color: colors.ink, fontWeight: fontWeight.bold, fontSize: fontSize.input },
+});
+
+// One flashcard in the deck's list: number, question, answer
+export const flashcardStyles = StyleSheet.create({
+  row: { ...panel, padding: spacing.lg },
+  pressed: { backgroundColor: colors.background },
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  number: {
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.bold,
+    color: colors.purple,
+    backgroundColor: colors.lavender,
+    borderRadius: radius.small,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  front: { flex: 1, fontSize: fontSize.input, fontWeight: fontWeight.bold, color: colors.ink, lineHeight: 22 },
+  back: {
+    fontSize: fontSize.body,
+    color: colors.muted,
+    lineHeight: 21,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+});
+
+// Quoted card text shown in "Delete this flashcard?"
+export const quoteStyles = StyleSheet.create({
+  box: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.purple,
+    backgroundColor: colors.background,
+    borderRadius: radius.small,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  text: { fontSize: fontSize.body, color: colors.ink, lineHeight: 21 },
+});
+
+// Green "Saved!" line inside a form
+export const noticeStyles = StyleSheet.create({
+  box: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.successFill,
+    borderWidth: 1,
+    borderColor: colors.successBorder,
+    borderRadius: radius.input,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  text: { flex: 1, fontSize: fontSize.label, color: colors.success, lineHeight: 20 },
 });

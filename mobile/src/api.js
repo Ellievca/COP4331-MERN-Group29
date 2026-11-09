@@ -183,3 +183,43 @@ export function createDeck({ title, description = '', courseId = null }) {
 export function deleteDeck(deckId) {
   return request(`/decks/${deckId}`, { method: 'DELETE' });
 }
+
+// ---------- One deck and its cards ----------
+
+// The deck (with cardCount). A deleted or unknown deck answers 404.
+export function getDeck(deckId) {
+  return request(`/decks/${deckId}`);
+}
+
+// { title?, description?, courseId? } → the updated deck
+export function updateDeck(deckId, { title, description, courseId }) {
+  return request(`/decks/${deckId}`, {
+    method: 'PATCH',
+    body: { title: title.trim(), description: description.trim(), courseId },
+  });
+}
+
+// [{ id, front, back, createdAt, ... }], oldest first (the order you added them)
+export function getCards(deckId) {
+  return request(`/decks/${deckId}/cards`);
+}
+
+// { front, back } → the new card
+export function createCard(deckId, { front, back }) {
+  return request(`/decks/${deckId}/cards`, {
+    method: 'POST',
+    body: { front: front.trim(), back: back.trim() },
+  });
+}
+
+// { front, back } → the updated card
+export function updateCard(deckId, cardId, { front, back }) {
+  return request(`/decks/${deckId}/cards/${cardId}`, {
+    method: 'PATCH',
+    body: { front: front.trim(), back: back.trim() },
+  });
+}
+
+export function deleteCard(deckId, cardId) {
+  return request(`/decks/${deckId}/cards/${cardId}`, { method: 'DELETE' });
+}
