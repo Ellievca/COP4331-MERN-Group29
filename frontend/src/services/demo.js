@@ -155,6 +155,39 @@ export const demoWorkspace = {
       workspace.decks = workspace.decks.filter((deck) => deck.id !== id);
     });
   },
+  async updateDeck(userId, deckId, fields) {
+    return update(userId, (workspace) => {
+      const deck = workspace.decks.find((item) => item.id === deckId);
+      if (!deck) throw new ServiceError('This deck could not be found.');
+      if (fields.title !== undefined) {
+        if (!fields.title.trim()) throw new ServiceError('Give your deck a title first.');
+        deck.title = fields.title.trim();
+      }
+      if (fields.courseId && !workspace.courses.some((course) => course.id === fields.courseId))
+        throw new ServiceError('This course could not be found.');
+      if (fields.description !== undefined) deck.description = fields.description.trim();
+      if (fields.courseId !== undefined) deck.courseId = fields.courseId || null;
+      deck.updatedAt = new Date().toISOString();
+      return deck;
+    });
+  },
+  async updateCard(userId, deckId, cardId, fields) {
+    return update(userId, (workspace) => {
+      const deck = workspace.decks.find((item) => item.id === deckId);
+      const card = deck?.cards.find((item) => item.id === cardId);
+      if (!card) throw new ServiceError('This flashcard could not be found.');
+      if (
+        (fields.front !== undefined && !fields.front.trim()) ||
+        (fields.back !== undefined && !fields.back.trim())
+      )
+        throw new ServiceError('Add both a question and an answer.');
+      if (fields.front !== undefined) card.front = fields.front.trim();
+      if (fields.back !== undefined) card.back = fields.back.trim();
+      card.updatedAt = new Date().toISOString();
+      deck.updatedAt = card.updatedAt;
+      return card;
+    });
+  },
   async addCard(userId, deckId, fields) {
     return update(userId, (workspace) => {
       const deck = workspace.decks.find((deck) => deck.id === deckId);

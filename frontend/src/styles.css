@@ -1481,6 +1481,11 @@ svg {
   box-shadow: 0 6px 18px #6e4d9110;
   transform: translateY(-2px);
 }
+.deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .deck-card-top {
   display: flex;
   justify-content: space-between;
@@ -2039,6 +2044,15 @@ svg {
 .flashcard-row > div {
   display: flex;
   gap: 13px;
+}
+.flashcard-row > .flashcard-actions {
+  flex-direction: column;
+  gap: 4px;
+}
+.flashcard-actions .icon-button {
+  width: 100%;
+  height: 30px;
+  padding: 0;
 }
 .card-number {
   height: 24px;

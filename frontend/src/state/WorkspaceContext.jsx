@@ -54,6 +54,9 @@ export function WorkspaceProvider({ children }) {
           mutate('createDeck', [fields], 'Your new deck is ready. Add a few cards to get started.'),
         createCourse: (fields) => mutate('createCourse', [fields], 'Your new course is ready.'),
         deleteDeck: (id) => mutate('deleteDeck', [id], 'Deck deleted.'),
+        updateDeck: (id, fields) => mutate('updateDeck', [id, fields], 'Deck updated.'),
+        updateCard: (id, cardId, fields) =>
+          mutate('updateCard', [id, cardId, fields], 'Flashcard updated.'),
         addCard: (id, fields) =>
           mutate('addCard', [id, fields], 'Flashcard added. One more thing you know.'),
         deleteCard: (id, cardId) => mutate('deleteCard', [id, cardId], 'Flashcard deleted.'),

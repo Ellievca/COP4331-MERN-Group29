@@ -116,6 +116,31 @@ export const workspaceService = {
           csrfToken: session.csrfToken,
         });
   },
+  async updateDeck(session, id, fields) {
+    return IS_DEMO
+      ? demoWorkspace.updateDeck(session.user.id, id, fields)
+      : normalizeDeck(
+          await request(`/api/decks/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            body: fields,
+            token: session.accessToken,
+            csrfToken: session.csrfToken,
+          }),
+        );
+  },
+  async updateCard(session, deckId, cardId, fields) {
+    if (IS_DEMO) return demoWorkspace.updateCard(session.user.id, deckId, cardId, fields);
+    const card = await request(
+      `/api/decks/${encodeURIComponent(deckId)}/cards/${encodeURIComponent(cardId)}`,
+      {
+        method: 'PATCH',
+        body: fields,
+        token: session.accessToken,
+        csrfToken: session.csrfToken,
+      },
+    );
+    return { ...card, id: card.id || card._id };
+  },
   async addCard(session, id, fields) {
     return IS_DEMO
       ? demoWorkspace.addCard(session.user.id, id, fields)

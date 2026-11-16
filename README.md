@@ -8,6 +8,7 @@ StudySync is a flashcard study application developed by COP4331 Group 29. It use
 
 - Account registration, login, and logout.
 - Private courses, decks, and flashcards associated with each account.
+- Deck editing for titles, descriptions, and course assignments, and flashcard editing for questions and answers. Use the pencil on a deck tile, Edit deck on its detail page, or the pencil beside a flashcard. Editing supports both the API and browser-only demo.
 - Deck search, course filters, and sorting.
 - Flashcard review with answer reveals and recall self-assessment.
 - Saved study sessions, study history, and dashboard totals.

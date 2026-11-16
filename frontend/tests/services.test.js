@@ -9,6 +9,7 @@ import {
 } from '../src/services/client.js';
 import { filterDecks } from '../src/lib/format.js';
 import { SESSION_KEY } from '../src/lib/storage.js';
+import { workspaceService } from '../src/services/index.js';
 
 function memoryStorage() {
   const entries = new Map();
@@ -123,6 +124,103 @@ test('workspace changes persist and remain isolated between accounts', async () 
   assert.equal((await demoWorkspace.getCards(user.id, deck.id)).length, 0);
   await demoWorkspace.deleteDeck(user.id, deck.id);
   assert.ok(!(await demoWorkspace.load(user.id)).decks.some((item) => item.id === deck.id));
+});
+
+test('deck and card edits persist without changing identities, counts, or another account', async () => {
+  const owner = 'editing-owner';
+  const deck = await demoWorkspace.createDeck(owner, {
+    title: 'Original',
+    description: 'Before',
+    courseId: null,
+  });
+  const card = await demoWorkspace.addCard(owner, deck.id, { front: 'Question', back: 'Answer' });
+  const course = await demoWorkspace.createCourse(owner, {
+    name: 'Biology',
+    code: 'BIO',
+    color: 'blue',
+  });
+  await demoWorkspace.updateDeck(owner, deck.id, {
+    title: 'Revised',
+    description: 'After',
+    courseId: course.id,
+  });
+  await demoWorkspace.updateCard(owner, deck.id, card.id, {
+    front: 'New question',
+    back: 'New answer',
+  });
+  const saved = (await demoWorkspace.load(owner)).decks.find((item) => item.id === deck.id);
+  assert.equal(saved.title, 'Revised');
+  assert.equal(saved.description, 'After');
+  assert.equal(saved.courseId, course.id);
+  assert.equal(saved.cardCount, 1);
+  assert.equal(saved.cards[0].id, card.id);
+  assert.equal(saved.cards[0].front, 'New question');
+  assert.equal(saved.cards[0].back, 'New answer');
+  await assert.rejects(
+    demoWorkspace.updateDeck('outsider', deck.id, { title: 'Hijack' }),
+    /not be found/,
+  );
+  await assert.rejects(
+    demoWorkspace.updateCard('outsider', deck.id, card.id, { back: 'Hijack' }),
+    /not be found/,
+  );
+  await assert.rejects(demoWorkspace.updateDeck(owner, deck.id, { title: '   ' }), /title/);
+  await assert.rejects(
+    demoWorkspace.updateCard(owner, deck.id, card.id, { front: ' ', back: 'Lost' }),
+    /question and an answer/,
+  );
+  assert.equal((await demoWorkspace.getCards(owner, deck.id))[0].back, 'New answer');
+  await demoWorkspace.updateDeck(owner, deck.id, { courseId: null, description: '' });
+  const personal = (await demoWorkspace.load(owner)).decks.find((item) => item.id === deck.id);
+  assert.equal(personal.courseId, null);
+  assert.equal(personal.description, '');
+  assert.equal(personal.title, 'Revised');
+});
+
+test('editing uses authenticated PATCH requests and propagates save failures', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const session = { user: { id: 'owner' }, accessToken: 'test-token', csrfToken: 'test-csrf' };
+  try {
+    globalThis.fetch = async (url, options) => {
+      calls.push({ url, options });
+      return new Response(JSON.stringify({ _id: 'saved-id', ...JSON.parse(options.body) }), {
+        status: 200,
+      });
+    };
+    const deck = await workspaceService.updateDeck(session, 'deck/id', {
+      title: 'Revised',
+      courseId: null,
+    });
+    const card = await workspaceService.updateCard(session, 'deck/id', 'card/id', {
+      front: 'Q',
+      back: 'A',
+    });
+    assert.equal(deck.id, 'saved-id');
+    assert.equal(card.id, 'saved-id');
+    assert.equal(calls[0].url, '/api/decks/deck%2Fid');
+    assert.equal(calls[1].url, '/api/decks/deck%2Fid/cards/card%2Fid');
+    for (const { options } of calls) {
+      assert.equal(options.method, 'PATCH');
+      assert.equal(options.credentials, 'include');
+      assert.equal(options.headers['X-CSRF-Token'], 'test-csrf');
+      assert.equal(options.headers.Authorization, 'Bearer test-token');
+    }
+    assert.deepEqual(JSON.parse(calls[0].options.body), { title: 'Revised', courseId: null });
+    assert.deepEqual(JSON.parse(calls[1].options.body), { front: 'Q', back: 'A' });
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: 'Save rejected' }), { status: 400 });
+    await assert.rejects(
+      workspaceService.updateCard(session, 'deck', 'card', { back: '' }),
+      /Save rejected/,
+    );
+    await assert.rejects(
+      workspaceService.updateDeck(session, 'deck', { title: '' }),
+      /Save rejected/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('search, course filtering, and sorting compose without changing the source order', () => {

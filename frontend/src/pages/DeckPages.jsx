@@ -8,6 +8,7 @@ import {
   CircleCheck,
   Flag,
   Layers,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -19,7 +20,7 @@ import { useAuth } from '../state/AuthContext.jsx';
 import { workspaceService } from '../services/index.js';
 import { courseFor } from '../lib/format.js';
 import { EmptyState, ErrorMessage, Modal, Spinner } from '../components/UI.jsx';
-import { AddCardModal } from '../components/Decks.jsx';
+import { AddCardModal, CreateDeckModal } from '../components/Decks.jsx';
 
 function useCards(deckId) {
   const { session } = useAuth();
@@ -58,6 +59,8 @@ export function DeckDetailPage() {
   const { cards, loading, error, reload } = useCards(id);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
+  const [editingDeck, setEditingDeck] = useState(false);
+  const [editingCard, setEditingCard] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deleteError, setDeleteError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -103,6 +106,10 @@ export function DeckDetailPage() {
           </span>
         </div>
         <div className="button-group">
+          <button className="button secondary" onClick={() => setEditingDeck(true)}>
+            <Pencil size={16} />
+            Edit deck
+          </button>
           <button className="button secondary" onClick={() => setAdding(true)}>
             <Plus size={16} />
             Add flashcard
@@ -160,16 +167,25 @@ export function DeckDetailPage() {
                     <p>{card.front}</p>
                   </div>
                   <p>{card.back}</p>
-                  <button
-                    className="icon-button"
-                    aria-label={`Delete flashcard ${index + 1}`}
-                    onClick={() => {
-                      setDeleting(card);
-                      setDeleteError('');
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flashcard-actions">
+                    <button
+                      className="icon-button"
+                      aria-label={`Edit flashcard ${index + 1}`}
+                      onClick={() => setEditingCard(card)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={`Delete flashcard ${index + 1}`}
+                      onClick={() => {
+                        setDeleting(card);
+                        setDeleteError('');
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -189,6 +205,15 @@ export function DeckDetailPage() {
         </>
       )}
       {adding && <AddCardModal deck={deck} onClose={() => setAdding(false)} onAdded={reload} />}
+      {editingDeck && <CreateDeckModal deck={deck} onClose={() => setEditingDeck(false)} />}
+      {editingCard && (
+        <AddCardModal
+          deck={deck}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onAdded={reload}
+        />
+      )}
       {deleting && (
         <Modal
           title="Delete this flashcard?"

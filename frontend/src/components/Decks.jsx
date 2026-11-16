@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Braces, CircuitBoard, GitFork, Layers, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Braces,
+  CircuitBoard,
+  GitFork,
+  Layers,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { Modal, ErrorMessage } from './UI.jsx';
 import { useWorkspace } from '../state/WorkspaceContext.jsx';
 import { courseFor } from '../lib/format.js';
@@ -94,6 +103,7 @@ export function CreateCourseModal({ onClose }) {
   );
 }
 export function DeckCard({ deck, courses, onDelete }) {
+  const [editing, setEditing] = useState(false);
   const course = courseFor(courses, deck);
   const Icon = courseIcon(course?.code);
   return (
@@ -102,13 +112,22 @@ export function DeckCard({ deck, courses, onDelete }) {
         <span className={`deck-symbol ${course?.color || 'purple'}`}>
           <Icon size={24} strokeWidth={1.65} />
         </span>
-        <button
-          className="icon-button delete-deck"
-          onClick={() => onDelete(deck)}
-          aria-label={`Delete ${deck.title}`}
-        >
-          <Trash2 size={16} />
-        </button>
+        <div className="deck-actions">
+          <button
+            className="icon-button"
+            onClick={() => setEditing(true)}
+            aria-label={`Edit ${deck.title}`}
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            className="icon-button delete-deck"
+            onClick={() => onDelete(deck)}
+            aria-label={`Delete ${deck.title}`}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
       <span className={`course-label ${course?.color || 'purple'}`}>
         {course?.code || 'PERSONAL DECK'}
@@ -117,6 +136,7 @@ export function DeckCard({ deck, courses, onDelete }) {
         <Link to={`/app/decks/${deck.id}`}>{deck.title}</Link>
       </h3>
       <p>{deck.description || 'A blank canvas for your next lightbulb moment.'}</p>
+      {editing && <CreateDeckModal deck={deck} onClose={() => setEditing(false)} />}
       <div className="deck-card-bottom">
         <span>
           <Layers size={14} />
@@ -134,13 +154,18 @@ export function DeckCard({ deck, courses, onDelete }) {
   );
 }
 
-export function CreateDeckModal({ onClose, onCreated }) {
-  const { courses, createDeck } = useWorkspace();
-  const [fields, setFields] = useState({ title: '', description: '', courseId: '' });
+export function CreateDeckModal({ deck: existingDeck, onClose, onCreated }) {
+  const { courses, createDeck, updateDeck } = useWorkspace();
+  const [fields, setFields] = useState({
+    title: existingDeck?.title || '',
+    description: existingDeck?.description || '',
+    courseId: existingDeck?.courseId || '',
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event) {
     event.preventDefault();
+    if (busy) return;
     setError('');
     if (!fields.title.trim()) {
       setError('Give your deck a title first.');
@@ -148,11 +173,14 @@ export function CreateDeckModal({ onClose, onCreated }) {
     }
     setBusy(true);
     try {
-      const deck = await createDeck({
+      const values = {
         title: fields.title.trim(),
         description: fields.description.trim(),
         courseId: fields.courseId || null,
-      });
+      };
+      const deck = existingDeck
+        ? await updateDeck(existingDeck.id, values)
+        : await createDeck(values);
       onCreated?.(deck);
       onClose();
     } catch (failure) {
@@ -162,9 +190,15 @@ export function CreateDeckModal({ onClose, onCreated }) {
   }
   return (
     <Modal
-      title="Something new to learn."
-      subtitle="Give your ideas a home. You can add flashcards next."
-      onClose={onClose}
+      title={existingDeck ? 'Edit deck' : 'Something new to learn.'}
+      subtitle={
+        existingDeck
+          ? 'Update the title, course, or description.'
+          : 'Give your ideas a home. You can add flashcards next.'
+      }
+      onClose={() => {
+        if (!busy) onClose();
+      }}
     >
       <ErrorMessage>{error}</ErrorMessage>
       <form onSubmit={submit}>
@@ -216,7 +250,7 @@ export function CreateDeckModal({ onClose, onCreated }) {
           </button>
           <button className="button primary" disabled={busy}>
             <Plus size={16} />
-            {busy ? 'Creating…' : 'Create deck'}
+            {busy ? 'Saving…' : existingDeck ? 'Save changes' : 'Create deck'}
           </button>
         </div>
       </form>
@@ -224,13 +258,14 @@ export function CreateDeckModal({ onClose, onCreated }) {
   );
 }
 
-export function AddCardModal({ deck, onClose, onAdded }) {
-  const { addCard } = useWorkspace();
-  const [fields, setFields] = useState({ front: '', back: '' });
+export function AddCardModal({ deck, card, onClose, onAdded }) {
+  const { addCard, updateCard } = useWorkspace();
+  const [fields, setFields] = useState({ front: card?.front || '', back: card?.back || '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event) {
     event.preventDefault();
+    if (busy) return;
     setError('');
     if (!fields.front.trim() || !fields.back.trim()) {
       setError('Add both a question and an answer.');
@@ -238,7 +273,9 @@ export function AddCardModal({ deck, onClose, onAdded }) {
     }
     setBusy(true);
     try {
-      await addCard(deck.id, { front: fields.front.trim(), back: fields.back.trim() });
+      const values = { front: fields.front.trim(), back: fields.back.trim() };
+      if (card) await updateCard(deck.id, card.id, values);
+      else await addCard(deck.id, values);
       await onAdded();
       onClose();
     } catch (failure) {
@@ -248,9 +285,13 @@ export function AddCardModal({ deck, onClose, onAdded }) {
   }
   return (
     <Modal
-      title="One more lightbulb moment."
-      subtitle={`Add a flashcard to ${deck.title}.`}
-      onClose={onClose}
+      title={card ? 'Edit flashcard' : 'One more lightbulb moment.'}
+      subtitle={
+        card ? `Update this flashcard in ${deck.title}.` : `Add a flashcard to ${deck.title}.`
+      }
+      onClose={() => {
+        if (!busy) onClose();
+      }}
     >
       <ErrorMessage>{error}</ErrorMessage>
       <form onSubmit={submit}>
@@ -285,7 +326,7 @@ export function AddCardModal({ deck, onClose, onAdded }) {
           </button>
           <button className="button primary" disabled={busy}>
             <Plus size={16} />
-            {busy ? 'Saving…' : 'Add flashcard'}
+            {busy ? 'Saving…' : card ? 'Save changes' : 'Add flashcard'}
           </button>
         </div>
       </form>
