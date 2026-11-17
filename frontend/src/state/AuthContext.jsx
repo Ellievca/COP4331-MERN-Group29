@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { authService } from '../services/index.js';
 import { writeStored, SESSION_KEY } from '../lib/storage.js';
 import { IS_DEMO } from '../services/client.js';
+import { reconcileSession } from '../lib/auth-session.js';
 
 const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
@@ -43,7 +44,7 @@ export function AuthProvider({ children }) {
         if (!active || version !== authVersion.current || changingAuth.current) return;
         if (current) writeStored(sessionStorage, SESSION_KEY, current);
         else sessionStorage.removeItem(SESSION_KEY);
-        setSession(current);
+        setSession((previous) => reconcileSession(previous, current));
       } catch {
         /* A temporary network failure must not invent a different account. */
       }

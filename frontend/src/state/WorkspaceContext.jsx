@@ -5,6 +5,8 @@ import { workspaceService } from '../services/index.js';
 const WorkspaceContext = createContext(null);
 export function WorkspaceProvider({ children }) {
   const { session } = useAuth();
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
   const [data, setData] = useState({ decks: [], courses: [], sessions: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,14 +16,14 @@ export function WorkspaceProvider({ children }) {
     const current = ++generation.current;
     setError('');
     try {
-      const next = await workspaceService.load(session);
+      const next = await workspaceService.load(sessionRef.current);
       if (generation.current === current) setData(next);
     } catch (failure) {
       if (generation.current === current) setError(failure.message);
     } finally {
       if (generation.current === current) setLoading(false);
     }
-  }, [session]);
+  }, [session?.user?.id, session?.mode]);
   useEffect(() => {
     reload();
     return () => {
