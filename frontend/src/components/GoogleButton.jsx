@@ -62,7 +62,14 @@ export default function GoogleButton({ link = false }) {
                 setMessage('Google sign-in linked.');
               } else await acceptSession(normalizeLoginResponse(result));
             } catch (failure) {
-              if (active) setError(failure.message);
+              if (active) {
+                setError(
+                  failure.status === 401
+                    ? 'Google sign-in expired or could not be verified. Please try again.'
+                    : failure.message,
+                );
+                setAttempt((value) => value + 1);
+              }
             }
           },
         });

@@ -147,15 +147,23 @@ export function accountRoutes(
     if (!config.googleClientId || config.googleAccountsReady === false)
       throw new HttpError(503, 'Google sign-in is not configured yet.', 'google_unavailable');
     const nonce = randomBytes(32).toString('base64url');
+    const existingBrowser = req.cookies['studysync.google'];
+    const browser = /^[A-Za-z0-9_-]{43}$/.test(existingBrowser || '')
+      ? existingBrowser
+      : randomBytes(32).toString('base64url');
     await db
       .collection('GoogleChallenges')
-      .insertOne({ _id: digest(nonce), expiresAt: new Date(Date.now() + 5 * 60000) });
-    res.cookie('studysync.google', nonce, {
+      .insertOne({
+        _id: digest(nonce),
+        browser: digest(browser),
+        expiresAt: new Date(Date.now() + 5 * 60000),
+      });
+    res.cookie('studysync.google', browser, {
       httpOnly: true,
       secure: config.production,
       sameSite: 'strict',
       path: '/api/auth',
-      maxAge: 5 * 60000,
+      maxAge: 30 * 60000,
     });
     res.json({ nonce });
   });
@@ -168,7 +176,7 @@ export function accountRoutes(
       z.object({ credential: z.string().min(1).max(16000) }).strict(),
       req.body,
     );
-    const nonce = req.cookies['studysync.google'];
+    const browser = req.cookies['studysync.google'];
     let payload;
     try {
       payload = await verifyGoogle(credential);
@@ -180,8 +188,8 @@ export function accountRoutes(
       );
     }
     if (
-      !nonce ||
-      payload?.nonce !== nonce ||
+      !/^[A-Za-z0-9_-]{43}$/.test(browser || '') ||
+      !/^[A-Za-z0-9_-]{43}$/.test(payload?.nonce || '') ||
       !payload.sub ||
       !payload.email ||
       !payload.email_verified
@@ -195,7 +203,11 @@ export function accountRoutes(
       !(
         await db
           .collection('GoogleChallenges')
-          .deleteOne({ _id: digest(nonce), expiresAt: { $gt: new Date() } })
+          .deleteOne({
+            _id: digest(payload.nonce),
+            browser: digest(browser),
+            expiresAt: { $gt: new Date() },
+          })
       ).deletedCount
     )
       throw new HttpError(401, 'Google sign-in expired. Please try again.', 'invalid_google_token');

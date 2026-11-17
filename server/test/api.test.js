@@ -603,6 +603,9 @@ test('Google accounts use verified identities, nonce checks, safe linking, and n
   const feature = await accountApp(false),
     agent = request.agent(feature.app);
   const { nonce } = (await agent.get('/api/auth/google/challenge').expect(200)).body;
+  // A second tab gets its own nonce without invalidating the first tab's nonce.
+  const secondTab = (await agent.get('/api/auth/google/challenge').expect(200)).body;
+  assert.notEqual(secondTab.nonce, nonce);
   feature.setGoogle({
     sub: 'google-new-user',
     email: 'new.google@gmail.com',
@@ -611,6 +614,14 @@ test('Google accounts use verified identities, nonce checks, safe linking, and n
     family_name: 'Student',
     nonce,
   });
+  // Even a correctly signed token cannot use another browser's challenge.
+  const foreignBrowser = request.agent(feature.app);
+  await foreignBrowser.get('/api/auth/google/challenge').expect(200);
+  await foreignBrowser
+    .post('/api/auth/google')
+    .set('Origin', origin)
+    .send({ credential: 'test-signed-credential' })
+    .expect(401);
   await agent
     .post('/api/auth/google')
     .set('Origin', origin)
