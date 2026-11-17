@@ -7,25 +7,27 @@ StudySync is a flashcard study application developed by COP4331 Group 29. It use
 ## Features
 
 - Account registration, login, and logout.
+- Google sign-in and authenticated account linking (requires Google Web Client ID configuration), email verification, and password recovery (requires Resend configuration for real delivery).
 - Private courses, decks, and flashcards associated with each account.
 - Deck editing for titles, descriptions, and course assignments, and flashcard editing for questions and answers. Use the pencil on a deck tile, Edit deck on its detail page, or the pencil beside a flashcard. Editing supports both the API and browser-only demo.
 - Deck search, course filters, and sorting.
-- Flashcard review with answer reveals and recall self-assessment.
+- FSRS spaced repetition with a due-card queue, four recall ratings, daily new-card limits, timezone preferences, and mixed-deck review. Free practice keeps the spaced-repetition schedule unchanged.
+- Typed recall, cloze cards, private diagram images with hidden labels, application questions and worked explanations, struggling-card repair tools, and exam-date workload planning.
 - Saved study sessions, study history, and dashboard totals.
 - Administrator tools for account search, statistics, and account activation.
 
-Email verification, password reset delivery, group meetings, and room booking are not currently implemented.
+See [authentication and learning setup](docs/AUTH_AND_LEARNING.md) for Google/Resend configuration and rollout checks. Local development writes verification emails to an ignored local outbox. Group meetings and room booking are not implemented.
 
 ## Technology stack
 
-| Component | Technology |
-| --- | --- |
-| Frontend | React, JavaScript, React Router, Vite |
-| Backend | Node.js, Express |
-| Database | MongoDB |
-| Authentication | Cookie-based sessions, bcrypt password hashing |
-| Production hosting | DigitalOcean, Nginx, systemd, Let's Encrypt |
-| Package manager | pnpm |
+| Component          | Technology                                     |
+| ------------------ | ---------------------------------------------- |
+| Frontend           | React, JavaScript, React Router, Vite          |
+| Backend            | Node.js, Express                               |
+| Database           | MongoDB                                        |
+| Authentication     | Cookie-based sessions, bcrypt password hashing |
+| Production hosting | DigitalOcean, Nginx, systemd, Let's Encrypt    |
+| Package manager    | pnpm                                           |
 
 ## Local setup
 
@@ -48,11 +50,11 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Register an account and sig
 
 The development launcher starts these services:
 
-| Service | Default address |
-| --- | --- |
-| React development server | `http://127.0.0.1:5173` |
-| Express API | `http://127.0.0.1:5000` |
-| MongoDB | `mongodb://127.0.0.1:27019` |
+| Service                  | Default address             |
+| ------------------------ | --------------------------- |
+| React development server | `http://127.0.0.1:5173`     |
+| Express API              | `http://127.0.0.1:5000`     |
+| MongoDB                  | `mongodb://127.0.0.1:27019` |
 
 Vite proxies `/api` requests to Express. The frontend uses the API by default.
 
@@ -64,14 +66,14 @@ Stop the launcher with `Ctrl+C`. Only one process can use each configured port a
 
 Run these commands from the repository root:
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start the frontend, API, and persistent local MongoDB database. |
-| `pnpm test` | Run frontend behavior tests and backend integration tests against a disposable MongoDB instance. |
-| `pnpm build` | Build the production frontend in `frontend/dist/`. |
-| `pnpm start` | Start Express with the configured database and serve the built frontend. |
-| `pnpm dev:demo` | Start the optional browser-only demo. |
-| `pnpm create-admin --login username` | Grant administrator access to an existing account in the configured database. |
+| Command                              | Purpose                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `pnpm dev`                           | Start the frontend, API, and persistent local MongoDB database.                                  |
+| `pnpm test`                          | Run frontend behavior tests and backend integration tests against a disposable MongoDB instance. |
+| `pnpm build`                         | Build the production frontend in `frontend/dist/`.                                               |
+| `pnpm start`                         | Start Express with the configured database and serve the built frontend.                         |
+| `pnpm dev:demo`                      | Start the optional browser-only demo.                                                            |
+| `pnpm create-admin --login username` | Grant administrator access to an existing account in the configured database.                    |
 
 The demo is separate from the MongoDB-backed application and does not verify API integration or server persistence.
 
@@ -79,16 +81,16 @@ The demo is separate from the MongoDB-backed application and does not verify API
 
 The default local launcher does not require a manually configured MongoDB connection. To use a separately managed database or run the production server, copy `server/.env.example` to `server/.env` and set the appropriate values.
 
-| Variable | Purpose |
-| --- | --- |
-| `NODE_ENV` | Set to `production` for production hosting. |
-| `HOST` | API bind address; use `127.0.0.1` behind Nginx. |
-| `PORT` | API listening port. |
-| `MONGODB_URI` | Server-side MongoDB connection string. |
-| `MONGODB_DB_NAME` | Database used by the application. |
-| `APP_ORIGIN` | Application origin, including the scheme and hostname. |
-| `SESSION_HOURS` | Session lifetime in hours. |
-| `TRUST_PROXY` | Set to `1` when running behind the single trusted Nginx proxy. |
+| Variable          | Purpose                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| `NODE_ENV`        | Set to `production` for production hosting.                    |
+| `HOST`            | API bind address; use `127.0.0.1` behind Nginx.                |
+| `PORT`            | API listening port.                                            |
+| `MONGODB_URI`     | Server-side MongoDB connection string.                         |
+| `MONGODB_DB_NAME` | Database used by the application.                              |
+| `APP_ORIGIN`      | Application origin, including the scheme and hostname.         |
+| `SESSION_HOURS`   | Session lifetime in hours.                                     |
+| `TRUST_PROXY`     | Set to `1` when running behind the single trusted Nginx proxy. |
 
 Keep environment files and database credentials out of version control. Never place database credentials in frontend `VITE_` variables. The development launcher manages its own MongoDB connection; use `pnpm start` with a separately configured database.
 

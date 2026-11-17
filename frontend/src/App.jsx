@@ -9,6 +9,8 @@ import { DeckDetailPage, StudyPage } from './pages/DeckPages.jsx';
 import { EmptyState, Spinner } from './components/UI.jsx';
 import Layout from './components/Layout.jsx';
 import AdminPage from './pages/AdminPage.jsx';
+import { AccountPage, EmailPage } from './pages/AccountPages.jsx';
+import ReviewsPage from './pages/ReviewsPage.jsx';
 
 class ErrorBoundary extends Component {
   state = { failed: false };
@@ -108,6 +110,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login-error" element={<LoginErrorPage />} />
+          <Route path="/verify-email" element={<EmailPage />} />
+          <Route path="/forgot-password" element={<EmailPage reset />} />
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<Outlet />}>
@@ -117,6 +121,8 @@ export default function App() {
             <Route path="study/:id" element={<StudyRoute />} />
             <Route path="sessions" element={<SessionsPage />} />
             <Route path="admin" element={<AdminPage />} />
+            <Route path="account" element={<AccountPage />} />
+            <Route path="reviews" element={<ReviewsPage />} />
             <Route
               path="*"
               element={

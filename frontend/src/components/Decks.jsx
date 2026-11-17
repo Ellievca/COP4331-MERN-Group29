@@ -13,6 +13,7 @@ import {
 import { Modal, ErrorMessage } from './UI.jsx';
 import { useWorkspace } from '../state/WorkspaceContext.jsx';
 import { courseFor } from '../lib/format.js';
+import { CardLearningFields } from './CardLearning.jsx';
 
 const courseIcon = (code) =>
   code === 'COP4331'
@@ -160,6 +161,7 @@ export function CreateDeckModal({ deck: existingDeck, onClose, onCreated }) {
     title: existingDeck?.title || '',
     description: existingDeck?.description || '',
     courseId: existingDeck?.courseId || '',
+    examDate: existingDeck?.examDate || '',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -177,6 +179,7 @@ export function CreateDeckModal({ deck: existingDeck, onClose, onCreated }) {
         title: fields.title.trim(),
         description: fields.description.trim(),
         courseId: fields.courseId || null,
+        examDate: fields.examDate || null,
       };
       const deck = existingDeck
         ? await updateDeck(existingDeck.id, values)
@@ -244,6 +247,15 @@ export function CreateDeckModal({ deck: existingDeck, onClose, onCreated }) {
             maxLength={240}
           />
         </div>
+        <div className="field">
+          <label htmlFor="deck-exam">Exam date (optional)</label>
+          <input
+            id="deck-exam"
+            type="date"
+            value={fields.examDate}
+            onChange={(e) => setFields({ ...fields, examDate: e.target.value })}
+          />
+        </div>
         <div className="modal-actions">
           <button type="button" className="button secondary" onClick={onClose} disabled={busy}>
             Cancel
@@ -260,7 +272,14 @@ export function CreateDeckModal({ deck: existingDeck, onClose, onCreated }) {
 
 export function AddCardModal({ deck, card, onClose, onAdded }) {
   const { addCard, updateCard } = useWorkspace();
-  const [fields, setFields] = useState({ front: card?.front || '', back: card?.back || '' });
+  const [fields, setFields] = useState({
+    front: card?.front || '',
+    back: card?.back || '',
+    kind: card?.kind || 'basic',
+    explanation: card?.explanation || '',
+    imageId: card?.imageId || null,
+    masks: card?.masks || [],
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event) {
@@ -273,7 +292,11 @@ export function AddCardModal({ deck, card, onClose, onAdded }) {
     }
     setBusy(true);
     try {
-      const values = { front: fields.front.trim(), back: fields.back.trim() };
+      if (fields.kind === 'cloze' && !/\{\{c\d+::[^{}]+\}\}/.test(fields.front))
+        throw new Error('Use a cloze such as {{c1::answer}} in the question.');
+      if (fields.kind === 'diagram' && (!fields.imageId || !fields.masks.length))
+        throw new Error('Add a diagram and hide at least one label.');
+      const values = { ...fields, front: fields.front.trim(), back: fields.back.trim() };
       if (card) await updateCard(deck.id, card.id, values);
       else await addCard(deck.id, values);
       await onAdded();
@@ -320,6 +343,7 @@ export function AddCardModal({ deck, card, onClose, onAdded }) {
             maxLength={3000}
           />
         </div>
+        <CardLearningFields fields={fields} setFields={setFields} busy={busy} />
         <div className="modal-actions">
           <button type="button" className="button secondary" onClick={onClose} disabled={busy}>
             Cancel

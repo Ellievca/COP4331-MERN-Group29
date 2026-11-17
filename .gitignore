@@ -10,3 +10,4 @@ test-results/
 .local-mongo/
 .mongodb-binaries/
 coverage/
+.local-mail/

@@ -1,19 +1,12 @@
 import { MongoClient } from 'mongodb';
 
 // Collection names and required fields follow Ellie's database-setup.js.
-// Existing validators are preserved; there are no drops, resets, or migrations on startup.
+// Never drop/reset data. The auth migration below only makes passwordHash optional
+// for Google-only accounts while retaining every other existing validation rule.
 export async function ensureDatabase(db) {
   const definitions = {
     Users: {
-      required: [
-        'firstName',
-        'lastName',
-        'email',
-        'login',
-        'passwordHash',
-        'isVerified',
-        'createdAt',
-      ],
+      required: ['firstName', 'lastName', 'email', 'login', 'isVerified', 'createdAt'],
       properties: {
         firstName: { bsonType: 'string' },
         lastName: { bsonType: 'string' },
@@ -87,7 +80,26 @@ export async function ensureDatabase(db) {
       }
     }
   }
+  const userCollection = (await db.listCollections({ name: 'Users' }).toArray())[0];
+  const validator = userCollection?.options?.validator;
+  if (validator?.$jsonSchema?.required?.includes('passwordHash')) {
+    const migrated = structuredClone(validator);
+    migrated.$jsonSchema.required = migrated.$jsonSchema.required.filter(
+      (field) => field !== 'passwordHash',
+    );
+    await db.command({ collMod: 'Users', validator: migrated });
+  }
   await Promise.all([
+    db
+      .collection('Users')
+      .createIndex(
+        { googleSubject: 1 },
+        { unique: true, partialFilterExpression: { googleSubject: { $type: 'string' } } },
+      ),
+    ...['EmailChallenges', 'ResetGrants', 'GoogleChallenges'].map((name) =>
+      db.collection(name).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    ),
+    db.collection('CardProgress').createIndex({ userId: 1, 'schedule.due': 1 }),
     db.collection('Users').createIndex({ email: 1 }, { unique: true }),
     db.collection('Users').createIndex({ login: 1 }, { unique: true }),
     db.collection('Courses').createIndex({ userId: 1, name: 1 }, { unique: true }),

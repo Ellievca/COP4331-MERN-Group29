@@ -48,10 +48,39 @@ export const schemas = {
       title: z.string().trim().min(1).max(80),
       description: z.string().trim().max(240).default(''),
       courseId: objectId.nullable().default(null),
+      examDate: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .refine(
+          (v) => !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v,
+          'Use a valid date.',
+        )
+        .nullable()
+        .optional(),
     })
     .strict(),
   card: z
-    .object({ front: z.string().trim().min(1).max(1000), back: z.string().trim().min(1).max(3000) })
+    .object({
+      front: z.string().trim().min(1).max(1000),
+      back: z.string().trim().min(1).max(3000),
+      kind: z.enum(['basic', 'cloze', 'diagram', 'application']).optional(),
+      explanation: z.string().trim().max(1500).optional(),
+      imageId: objectId.nullable().optional(),
+      masks: z
+        .array(
+          z
+            .object({
+              x: z.number().min(0).max(100),
+              y: z.number().min(0).max(100),
+              width: z.number().min(0.1).max(100),
+              height: z.number().min(0.1).max(100),
+            })
+            .strict()
+            .refine((m) => m.x + m.width <= 100.01 && m.y + m.height <= 100.01),
+        )
+        .max(20)
+        .optional(),
+    })
     .strict(),
   session: z
     .object({

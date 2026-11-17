@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { HttpError } from './errors.js';
 import { schemas, validate } from './validation.js';
+import { issueChallenge } from './challenges.js';
 
 export const LOGIN_FAILURE = 'Login failed. Please check your credentials and try again.';
 const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
@@ -15,6 +16,8 @@ export const publicUser = (user) => ({
   role: user.role || 'user',
   isVerified: user.isVerified === true,
   isActive: user.isActive !== false,
+  googleLinked: Boolean(user.googleSubject),
+  hasPassword: Boolean(user.passwordHash),
 });
 export const cookieOptions = (config) => ({
   httpOnly: true,
@@ -37,6 +40,8 @@ export function authentication(db, config) {
       .collection('Users')
       .findOne({ _id: session.userId, isActive: { $ne: false } });
     if (!user) throw new HttpError(401, 'Please sign in to continue.', 'unauthorized');
+    if ((session.authVersion || 0) !== (user.authVersion || 0))
+      throw new HttpError(401, 'Please sign in again.', 'unauthorized');
     req.auth = { user, session };
     next();
   };
@@ -64,7 +69,28 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
-export async function authRoutes(db, config) {
+export async function createSession(db, config, req, res, user) {
+  if (req.cookies[config.cookieName])
+    await db
+      .collection('AuthSessions')
+      .deleteOne({ _id: tokenHash(req.cookies[config.cookieName]) });
+  const token = randomBytes(32).toString('base64url');
+  const csrfToken = randomBytes(32).toString('base64url');
+  await db
+    .collection('AuthSessions')
+    .insertOne({
+      _id: tokenHash(token),
+      userId: user._id,
+      authVersion: user.authVersion || 0,
+      csrfToken,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + config.sessionMilliseconds),
+    });
+  res.cookie(config.cookieName, token, cookieOptions(config));
+  res.json({ user: publicUser(user), csrfToken });
+}
+
+export async function authRoutes(db, config, { sendMail } = {}) {
   const router = Router();
   const dummyHash = await bcrypt.hash(randomBytes(32).toString('hex'), 12);
   router.post('/register', async (req, res) => {
@@ -78,11 +104,26 @@ export async function authRoutes(db, config) {
       isActive: true,
       createdAt: now,
       updatedAt: now,
+      verificationRequired: config.verificationRequired,
     };
     delete user.password;
     const result = await db.collection('Users').insertOne(user);
     user._id = result.insertedId;
-    res.status(201).json({ user: publicUser(user) });
+    let deliveryFailed = false;
+    if (config.verificationRequired) {
+      try {
+        await issueChallenge(db, config, user, 'verify', sendMail);
+      } catch {
+        deliveryFailed = true;
+      }
+    }
+    res
+      .status(201)
+      .json({
+        user: publicUser(user),
+        verificationRequired: Boolean(config.verificationRequired),
+        deliveryFailed,
+      });
   });
   router.post('/login', async (req, res) => {
     const fields = validate(schemas.login, req.body);
@@ -97,23 +138,13 @@ export async function authRoutes(db, config) {
       Buffer.byteLength(fields.password, 'utf8') > 72
     )
       throw new HttpError(401, LOGIN_FAILURE, 'invalid_credentials');
-    // Rotate a previous session rather than retaining the old cookie after login.
-    if (req.cookies[config.cookieName])
-      await db
-        .collection('AuthSessions')
-        .deleteOne({ _id: tokenHash(req.cookies[config.cookieName]) });
-    const token = randomBytes(32).toString('base64url');
-    const csrfToken = randomBytes(32).toString('base64url');
-    const session = {
-      _id: tokenHash(token),
-      userId: user._id,
-      csrfToken,
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + config.sessionMilliseconds),
-    };
-    await db.collection('AuthSessions').insertOne(session);
-    res.cookie(config.cookieName, token, cookieOptions(config));
-    res.json({ user: publicUser(user), csrfToken });
+    if (user.verificationRequired && !user.isVerified)
+      throw new HttpError(
+        409,
+        'Verify your email before signing in. Use Verify email below.',
+        'verification_required',
+      );
+    await createSession(db, config, req, res, user);
   });
   router.get('/me', authentication(db, config), (req, res) =>
     res.json({ user: publicUser(req.auth.user), csrfToken: req.auth.session.csrfToken }),

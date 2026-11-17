@@ -118,6 +118,10 @@ export default function Layout() {
         </div>
         <div className="workspace-label">YOUR WORKSPACE</div>
         <nav aria-label="Main navigation">
+          <NavLink to="/app/reviews" onClick={() => setMenuOpen(false)}>
+            <BookOpen size={19} />
+            Daily review
+          </NavLink>
           <NavLink end to="/app" onClick={() => setMenuOpen(false)}>
             <LayoutDashboard size={19} />
             Overview
@@ -129,6 +133,10 @@ export default function Layout() {
           <NavLink to="/app/sessions" onClick={() => setMenuOpen(false)}>
             <Clock3 size={19} />
             Study sessions
+          </NavLink>
+          <NavLink to="/app/account" onClick={() => setMenuOpen(false)}>
+            <ShieldCheck size={19} />
+            Account
           </NavLink>
           {user.role === 'admin' && (
             <NavLink to="/app/admin" onClick={() => setMenuOpen(false)}>

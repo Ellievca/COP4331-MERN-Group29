@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { authService } from '../services/index.js';
 import { writeStored, SESSION_KEY } from '../lib/storage.js';
 import { IS_DEMO } from '../services/client.js';
@@ -92,9 +92,23 @@ export function AuthProvider({ children }) {
       changingAuth.current = false;
     }
   }
+  const acceptSession = useCallback(async (provided) => {
+    changingAuth.current = true;
+    authVersion.current++;
+    try {
+      const next = provided || (await authService.restore());
+      if (next) writeStored(sessionStorage, SESSION_KEY, next);
+      else sessionStorage.removeItem(SESSION_KEY);
+      setSession(next);
+      setRestoreError('');
+      notifyOtherTabs();
+    } finally {
+      changingAuth.current = false;
+    }
+  }, []);
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user, loading, restoreError, login, logout }}
+      value={{ session, user: session?.user, loading, restoreError, login, logout, acceptSession }}
     >
       {children}
     </AuthContext.Provider>

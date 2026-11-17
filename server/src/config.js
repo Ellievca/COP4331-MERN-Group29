@@ -1,6 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 import { isIP } from 'node:net';
 import { fileURLToPath } from 'node:url';
+import { randomBytes } from 'node:crypto';
 
 loadEnv({ path: fileURLToPath(new URL('../.env', import.meta.url)), quiet: true });
 
@@ -26,10 +27,32 @@ export function readConfig(environment = process.env) {
   const mongoUri = environment.MONGODB_URI;
   if (!mongoUri) throw new Error('Set MONGODB_URI, or use the local development launcher.');
   const databaseName = environment.MONGODB_DB_NAME || 'StudySync_local';
+  const mailMode = environment.MAIL_MODE || (production ? 'disabled' : 'file');
+  const verificationRequired =
+    environment.EMAIL_VERIFICATION_REQUIRED !== undefined
+      ? environment.EMAIL_VERIFICATION_REQUIRED === 'true'
+      : environment.NODE_ENV !== 'test' &&
+        (mailMode === 'file' || Boolean(environment.RESEND_API_KEY && environment.MAIL_FROM));
+  if (
+    production &&
+    (environment.RESEND_API_KEY || verificationRequired) &&
+    (!environment.AUTH_CHALLENGE_SECRET || environment.AUTH_CHALLENGE_SECRET.length < 32)
+  )
+    throw new Error(
+      'Set AUTH_CHALLENGE_SECRET to at least 32 random characters before enabling email.',
+    );
+  if (production && verificationRequired && (!environment.RESEND_API_KEY || !environment.MAIL_FROM))
+    throw new Error('Configure RESEND_API_KEY and MAIL_FROM before requiring email verification.');
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(databaseName))
     throw new Error('MONGODB_DB_NAME contains unsupported characters.');
   return {
     production,
+    mailMode,
+    verificationRequired,
+    resendKey: environment.RESEND_API_KEY || '',
+    mailFrom: environment.MAIL_FROM || '',
+    challengeSecret: environment.AUTH_CHALLENGE_SECRET || randomBytes(32).toString('hex'),
+    googleClientId: environment.GOOGLE_CLIENT_ID || '',
     mongoUri,
     databaseName,
     port,

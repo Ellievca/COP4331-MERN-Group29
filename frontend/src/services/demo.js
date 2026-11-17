@@ -167,6 +167,7 @@ export const demoWorkspace = {
         throw new ServiceError('This course could not be found.');
       if (fields.description !== undefined) deck.description = fields.description.trim();
       if (fields.courseId !== undefined) deck.courseId = fields.courseId || null;
+      if (fields.examDate !== undefined) deck.examDate = fields.examDate;
       deck.updatedAt = new Date().toISOString();
       return deck;
     });
@@ -183,6 +184,8 @@ export const demoWorkspace = {
         throw new ServiceError('Add both a question and an answer.');
       if (fields.front !== undefined) card.front = fields.front.trim();
       if (fields.back !== undefined) card.back = fields.back.trim();
+      for (const key of ['kind', 'explanation', 'imageId', 'masks'])
+        if (fields[key] !== undefined) card[key] = fields[key];
       card.updatedAt = new Date().toISOString();
       deck.updatedAt = card.updatedAt;
       return card;

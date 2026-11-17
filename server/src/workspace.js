@@ -19,6 +19,22 @@ export function workspaceRoutes(db) {
   const decks = db.collection('Decks');
   const cards = db.collection('Cards');
   const sessions = db.collection('StudySessions');
+  async function validateCard(fields, userId, previous = {}) {
+    const card = { ...previous, ...fields };
+    if (card.kind === 'cloze' && !/\{\{c\d+::[^{}]+\}\}/.test(card.front))
+      throw new HttpError(
+        400,
+        'Use a cloze such as {{c1::answer}} in the question.',
+        'invalid_cloze',
+      );
+    if (
+      card.imageId &&
+      !(await db.collection('CardImages').findOne({ _id: id(card.imageId), userId }))
+    )
+      throw notFound();
+    if (card.kind === 'diagram' && (!card.imageId || !card.masks?.length))
+      throw new HttpError(400, 'Add a diagram and cover at least one label.', 'invalid_diagram');
+  }
   async function ownedDeck(req, value = req.params.id || req.params.deckId) {
     const deck = await decks.findOne({ _id: id(value), userId: req.auth.user._id, ...active });
     if (!deck) throw notFound();
@@ -149,6 +165,7 @@ export function workspaceRoutes(db) {
   router.post('/decks/:deckId/cards', async (req, res) => {
     const deck = await ownedDeck(req);
     const fields = validate(schemas.card, req.body);
+    await validateCard(fields, req.auth.user._id);
     if ((await cards.countDocuments({ deckId: deck._id, userId: req.auth.user._id })) >= 1000)
       throw new HttpError(409, 'Use another deck after 1,000 flashcards.', 'deck_limit');
     const now = new Date();
@@ -171,6 +188,13 @@ export function workspaceRoutes(db) {
   router.patch('/decks/:deckId/cards/:cardId', async (req, res) => {
     const deck = await ownedDeck(req);
     const fields = changes(schemas.card, req.body);
+    const existing = await cards.findOne({
+      _id: id(req.params.cardId),
+      deckId: deck._id,
+      userId: req.auth.user._id,
+    });
+    if (!existing) throw notFound();
+    await validateCard(fields, req.auth.user._id, existing);
     const card = await cards.findOneAndUpdate(
       { _id: id(req.params.cardId), deckId: deck._id, userId: req.auth.user._id },
       { $set: { ...fields, updatedAt: new Date() } },

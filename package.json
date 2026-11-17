@@ -13,5 +13,8 @@
     "test": "node scripts/check.mjs test",
     "build": "node scripts/check.mjs build",
     "create-admin": "node server/scripts/create-admin.mjs"
+  },
+  "dependencies": {
+    "ts-fsrs": "5.4.2"
   }
 }

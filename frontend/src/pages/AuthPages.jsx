@@ -18,8 +18,9 @@ import { Brand, ErrorMessage } from '../components/UI.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 import { authService } from '../services/index.js';
 import { IS_DEMO } from '../services/client.js';
+import GoogleButton from '../components/GoogleButton.jsx';
 
-function AuthLayout({ children }) {
+export function AuthLayout({ children }) {
   return (
     <div className="auth-layout">
       <aside className="auth-story">
@@ -208,6 +209,11 @@ export function LoginPage() {
           <ArrowRight size={18} />
         </button>
       </form>
+      <GoogleButton />
+      <p className="auth-switch">
+        <Link to="/forgot-password">Forgot password?</Link> ·{' '}
+        <Link to="/verify-email">Verify email</Link>
+      </p>
       <p className="auth-switch">
         New around here?{' '}
         <Link to="/register">
@@ -284,7 +290,14 @@ export function RegisterPage() {
         login: fields.login.trim(),
         password: fields.password,
       };
-      await authService.register(payload);
+      const result = await authService.register(payload);
+      if (result.verificationRequired) {
+        navigate('/verify-email', {
+          replace: true,
+          state: { email: payload.email, sent: !result.deliveryFailed },
+        });
+        return;
+      }
       navigate('/login', {
         replace: true,
         state: { registered: true, login: fields.login.trim() },
@@ -395,6 +408,7 @@ export function RegisterPage() {
           Sign in <ArrowRight size={14} />
         </Link>
       </p>
+      <GoogleButton />
     </AuthLayout>
   );
 }
