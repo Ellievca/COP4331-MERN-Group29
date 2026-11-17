@@ -340,6 +340,58 @@ test('database setup is repeatable without resetting accounts and creates the re
   assert.equal(users.find((index) => index.key.login).unique, true);
 });
 
+test('a legacy schema permission failure keeps password login available until an administrator migrates', async () => {
+  const original = (await db.listCollections({ name: 'Users' }).toArray())[0].options.validator;
+  const legacy = structuredClone(original);
+  legacy.$jsonSchema.required.push('passwordHash');
+  legacy.$jsonSchema.properties.migrationMarker = { bsonType: 'string', maxLength: 5 };
+  await db.command({ collMod: 'Users', validator: legacy });
+  try {
+    const who = await signUp();
+    const restricted = new Proxy(db, {
+      get(target, key) {
+        if (key === 'command')
+          return async () => {
+            throw Object.assign(new Error('Unauthorized'), { code: 13 });
+          };
+        const value = target[key];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    assert.equal((await ensureDatabase(restricted)).passwordlessAccounts, false);
+    assert.deepEqual(
+      (await db.listCollections({ name: 'Users' }).toArray())[0].options.validator,
+      legacy,
+    );
+    const pending = await createApp({
+      db,
+      config: { ...config, googleClientId: 'configured-client', googleAccountsReady: false },
+    });
+    const options = (await request(pending).get('/api/auth/options').expect(200)).body;
+    assert.equal(options.googleClientId, null);
+    assert.equal(options.googleSetupPending, true);
+    await request(pending).get('/api/auth/google/challenge').expect(503);
+    await request(pending)
+      .post('/api/auth/google')
+      .set('Origin', origin)
+      .send({ credential: 'unused' })
+      .expect(503);
+    await request(pending).get('/api/auth/me').set('Cookie', who.cookie).expect(200);
+    assert.equal((await ensureDatabase(db)).passwordlessAccounts, true);
+    const expected = structuredClone(legacy);
+    expected.$jsonSchema.required = expected.$jsonSchema.required.filter(
+      (field) => field !== 'passwordHash',
+    );
+    assert.deepEqual(
+      (await db.listCollections({ name: 'Users' }).toArray())[0].options.validator,
+      expected,
+    );
+    assert.equal(await db.collection('Users').countDocuments(), 1);
+  } finally {
+    await db.command({ collMod: 'Users', validator: original });
+  }
+});
+
 test('malformed IDs and JSON produce safe errors and health checks confirm MongoDB connectivity', async () => {
   const who = await signUp();
   await who.agent.get('/api/decks/not-an-id').expect(400);

@@ -5,7 +5,12 @@ import { createApp } from './app.js';
 
 export async function startServer() {
   const config = readConfig();
-  const { client, db } = await connectDatabase(config);
+  const { client, db, passwordlessAccounts } = await connectDatabase(config);
+  config.googleAccountsReady = passwordlessAccounts;
+  if (!passwordlessAccounts && config.googleClientId)
+    console.warn(
+      'Google sign-in awaits the Users schema migration. Run server/scripts/migrate-auth.mjs with a database administrator connection. Password sign-in remains available.',
+    );
   let server;
   try {
     const app = await createApp({

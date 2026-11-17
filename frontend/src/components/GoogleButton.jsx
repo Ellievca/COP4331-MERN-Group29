@@ -33,7 +33,12 @@ export default function GoogleButton({ link = false }) {
       try {
         const options = await request('/api/auth/options');
         if (!options.googleClientId) {
-          if (active) setMessage('Google sign-in will be available once setup is complete.');
+          if (active)
+            setMessage(
+              options.googleSetupPending
+                ? 'Google sign-in is awaiting a server configuration update. You can still use your password.'
+                : 'Google sign-in will be available once setup is complete.',
+            );
           return;
         }
         const { nonce } = await request('/api/auth/google/challenge');

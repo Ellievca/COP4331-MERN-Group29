@@ -82,12 +82,20 @@ export async function ensureDatabase(db) {
   }
   const userCollection = (await db.listCollections({ name: 'Users' }).toArray())[0];
   const validator = userCollection?.options?.validator;
+  let passwordlessAccounts = true;
   if (validator?.$jsonSchema?.required?.includes('passwordHash')) {
     const migrated = structuredClone(validator);
     migrated.$jsonSchema.required = migrated.$jsonSchema.required.filter(
       (field) => field !== 'passwordHash',
     );
-    await db.command({ collMod: 'Users', validator: migrated });
+    try {
+      await db.command({ collMod: 'Users', validator: migrated });
+    } catch (error) {
+      if (error.code !== 13) throw error;
+      // A read/write app account can operate normally without schema-admin access.
+      // Keep password login available until an operator runs the auth migration.
+      passwordlessAccounts = false;
+    }
   }
   await Promise.all([
     db
@@ -115,6 +123,7 @@ export async function ensureDatabase(db) {
     db.collection('AuthSessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection('AuthSessions').createIndex({ userId: 1 }),
   ]);
+  return { passwordlessAccounts };
 }
 
 export async function connectDatabase(config) {
@@ -122,8 +131,8 @@ export async function connectDatabase(config) {
   try {
     await client.connect();
     const db = client.db(config.databaseName);
-    await ensureDatabase(db);
-    return { client, db };
+    const readiness = await ensureDatabase(db);
+    return { client, db, ...readiness };
   } catch (error) {
     await client.close();
     throw error;

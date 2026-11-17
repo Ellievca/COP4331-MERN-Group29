@@ -37,7 +37,8 @@ export function accountRoutes(
       ).getPayload());
   router.get('/options', (req, res) =>
     res.json({
-      googleClientId: config.googleClientId || null,
+      googleClientId: config.googleAccountsReady === false ? null : config.googleClientId || null,
+      googleSetupPending: Boolean(config.googleClientId) && config.googleAccountsReady === false,
       emailAvailable: mailAvailable(config),
       verificationRequired: config.verificationRequired,
     }),
@@ -143,7 +144,7 @@ export function accountRoutes(
     res.json({ message: 'Password updated. Sign in with your new password.' });
   });
   router.get('/google/challenge', async (req, res) => {
-    if (!config.googleClientId)
+    if (!config.googleClientId || config.googleAccountsReady === false)
       throw new HttpError(503, 'Google sign-in is not configured yet.', 'google_unavailable');
     const nonce = randomBytes(32).toString('base64url');
     await db
@@ -159,7 +160,7 @@ export function accountRoutes(
     res.json({ nonce });
   });
   async function googleIdentity(req) {
-    if (!config.googleClientId)
+    if (!config.googleClientId || config.googleAccountsReady === false)
       throw new HttpError(503, 'Google sign-in is not configured yet.', 'google_unavailable');
     if (!config.allowedOrigins.includes(req.get('Origin')))
       throw new HttpError(403, 'Start Google sign-in from StudySync.', 'origin_not_allowed');
