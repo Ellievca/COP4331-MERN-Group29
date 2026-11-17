@@ -145,19 +145,23 @@ export function accountRoutes(
   });
   router.get('/google/challenge', async (req, res) => {
     if (!config.googleClientId || config.googleAccountsReady === false)
-      throw new HttpError(503, 'Google sign-in is not configured yet.', 'google_unavailable');
+      throw new HttpError(
+        503,
+        config.googleAccountsReady === false && config.googleClientId
+          ? 'Google sign-in is awaiting a server configuration update. You can still use your password.'
+          : 'Google sign-in will be available once setup is complete.',
+        'google_unavailable',
+      );
     const nonce = randomBytes(32).toString('base64url');
     const existingBrowser = req.cookies['studysync.google'];
     const browser = /^[A-Za-z0-9_-]{43}$/.test(existingBrowser || '')
       ? existingBrowser
       : randomBytes(32).toString('base64url');
-    await db
-      .collection('GoogleChallenges')
-      .insertOne({
-        _id: digest(nonce),
-        browser: digest(browser),
-        expiresAt: new Date(Date.now() + 5 * 60000),
-      });
+    await db.collection('GoogleChallenges').insertOne({
+      _id: digest(nonce),
+      browser: digest(browser),
+      expiresAt: new Date(Date.now() + 5 * 60000),
+    });
     res.cookie('studysync.google', browser, {
       httpOnly: true,
       secure: config.production,
@@ -165,7 +169,7 @@ export function accountRoutes(
       path: '/api/auth',
       maxAge: 30 * 60000,
     });
-    res.json({ nonce });
+    res.json({ nonce, googleClientId: config.googleClientId });
   });
   async function googleIdentity(req) {
     if (!config.googleClientId || config.googleAccountsReady === false)
@@ -201,13 +205,11 @@ export function accountRoutes(
       );
     if (
       !(
-        await db
-          .collection('GoogleChallenges')
-          .deleteOne({
-            _id: digest(payload.nonce),
-            browser: digest(browser),
-            expiresAt: { $gt: new Date() },
-          })
+        await db.collection('GoogleChallenges').deleteOne({
+          _id: digest(payload.nonce),
+          browser: digest(browser),
+          expiresAt: { $gt: new Date() },
+        })
       ).deletedCount
     )
       throw new HttpError(401, 'Google sign-in expired. Please try again.', 'invalid_google_token');

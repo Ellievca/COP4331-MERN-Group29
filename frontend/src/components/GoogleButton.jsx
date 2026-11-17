@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { request, normalizeLoginResponse, IS_DEMO } from '../services/client.js';
 import { useAuth } from '../state/AuthContext.jsx';
+import { prepareGoogleSignIn } from '../services/google.js';
 
 let googleScript;
 function loadGoogle() {
@@ -25,31 +26,22 @@ export default function GoogleButton({ link = false }) {
   const { acceptSession, session } = useAuth();
   const [error, setError] = useState(''),
     [attempt, setAttempt] = useState(0),
-    [message, setMessage] = useState('');
+    [message, setMessage] = useState(''),
+    [signingIn, setSigningIn] = useState(false);
   useEffect(() => {
     if (IS_DEMO) return;
     let active = true;
     async function setup() {
       try {
-        const options = await request('/api/auth/options');
-        if (!options.googleClientId) {
-          if (active)
-            setMessage(
-              options.googleSetupPending
-                ? 'Google sign-in is awaiting a server configuration update. You can still use your password.'
-                : 'Google sign-in will be available once setup is complete.',
-            );
-          return;
-        }
-        const { nonce } = await request('/api/auth/google/challenge');
-        await loadGoogle();
+        const { nonce, googleClientId } = await prepareGoogleSignIn(loadGoogle);
         if (!active) return;
         setMessage('');
         window.google.accounts.id.initialize({
-          client_id: options.googleClientId,
+          client_id: googleClientId,
           nonce,
           callback: async ({ credential }) => {
             if (!active) return;
+            setSigningIn(true);
             try {
               setError('');
               const result = await request(link ? '/api/auth/google/link' : '/api/auth/google', {
@@ -70,6 +62,8 @@ export default function GoogleButton({ link = false }) {
                 );
                 setAttempt((value) => value + 1);
               }
+            } finally {
+              if (active) setSigningIn(false);
             }
           },
         });
@@ -82,7 +76,10 @@ export default function GoogleButton({ link = false }) {
           width: 280,
         });
       } catch (failure) {
-        if (active) setError(failure.message);
+        if (active) {
+          if (failure.status === 503) setMessage(failure.message);
+          else setError(failure.message);
+        }
       }
     }
     setup();
@@ -94,6 +91,7 @@ export default function GoogleButton({ link = false }) {
   return (
     <div className="google-signin">
       <div ref={container} />
+      {signingIn && <p role="status">{link ? 'Linking Google…' : 'Signing you in…'}</p>}
       {message && <p role="status">{message}</p>}
       {error && (
         <>
