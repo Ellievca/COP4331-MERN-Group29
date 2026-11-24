@@ -14,6 +14,28 @@ const ratings = [
   [3, 'Good', 'I recalled it normally'],
   [4, 'Easy', 'I recalled it effortlessly'],
 ];
+
+// Intermittent reinforcement: occasionally reward successful recall.
+const rewardMessages = [
+  'Great job! Keep it up! 🌟',
+  'Excellent recall! 🎉',
+  "You're making progress! ✨",
+  'Nice work! 🏆',
+  'Amazing memory! ⭐',
+];
+
+function getRandomReward(rating) {
+  // Only reward Good (3) or Easy (4) responses.
+  if (rating < 3) return null;
+
+  // 25% chance of receiving a reward.
+  if (Math.random() >= 0.25) return null;
+
+  return rewardMessages[
+    Math.floor(Math.random() * rewardMessages.length)
+  ];
+}
+
 export default function ReviewsPage({ deckId }) {
   const { session } = useAuth(),
     { decks, courses, reload: refreshWorkspace } = useWorkspace();
@@ -33,6 +55,7 @@ export default function ReviewsPage({ deckId }) {
     [typed, setTyped] = useState(''),
     [editing, setEditing] = useState(null);
   const inFlight = useRef(false);
+  const [rewardMessage, setRewardMessage] = useState(null);
   const reload = useCallback(async () => {
     setError('');
     try {
@@ -109,6 +132,7 @@ export default function ReviewsPage({ deckId }) {
       });
       setIndex(0);
       setAnswers([]);
+      setRewardMessage(null);
       setFinished(false);
       setSaved(false);
       setRevealed(false);
@@ -156,6 +180,7 @@ export default function ReviewsPage({ deckId }) {
         });
       const next = [...answers, { cardId: card.id, deckId: card.deckId, rating }];
       setAnswers(next);
+      setRewardMessage(getRandomReward(rating));
       setIndex(index + 1);
       setRevealed(false);
       setTyped('');
@@ -226,6 +251,11 @@ export default function ReviewsPage({ deckId }) {
     return (
       <section className="learning-panel">
         <h1>{active.practice ? 'Practice complete' : 'Review complete'}</h1>
+        {rewardMessage && (
+          <p className="success-note" role="status">
+            ✨ {rewardMessage}
+          </p>
+        )}
         <p>
           {answers.length} cards reviewed · {answers.filter((a) => a.rating > 1).length} recalled.
         </p>
@@ -256,6 +286,11 @@ export default function ReviewsPage({ deckId }) {
     const card = active.queue[index];
     return (
       <section className="recall-session">
+      {rewardMessage && (
+        <p className="success-note" role="status">
+          ✨ {rewardMessage}
+        </p>
+      )}
         <div className="page-heading">
           <div>
             <span className="eyebrow">
